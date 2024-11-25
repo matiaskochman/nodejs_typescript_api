@@ -1,8 +1,12 @@
+// src/controllers/post.controller.ts
+
 import { Request, Response } from "express";
 import { AppDataSource } from "../ormconfig.js";
 import { Post } from "../entities/Post.js";
+import { Comment } from "../entities/Comment.js";
 
 const postRepository = AppDataSource.getRepository(Post);
+const commentRepository = AppDataSource.getRepository(Comment);
 
 /**
  * Obtiene todos los posts con sus comentarios.
@@ -79,5 +83,39 @@ export const getPostById = async (
   } catch (error) {
     console.error("Error al obtener el post:", error);
     res.status(500).json({ message: "Error al obtener el post" });
+  }
+};
+
+/**
+ * Obtiene todos los comentarios de un post específico.
+ */
+export const getCommentsByPostId = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { post_id } = req.params;
+
+    if (!post_id || isNaN(Number(post_id))) {
+      res.status(400).json({ message: "ID de post inválido" });
+      return;
+    }
+
+    const post = await postRepository.findOne({
+      where: { id: Number(post_id) },
+      relations: ["comments"],
+    });
+
+    if (!post) {
+      res.status(404).json({ message: "Post no encontrado" });
+      return;
+    }
+
+    res.json(post.comments);
+  } catch (error) {
+    console.error("Error al obtener los comentarios del post:", error);
+    res
+      .status(500)
+      .json({ message: "Error al obtener los comentarios del post" });
   }
 };

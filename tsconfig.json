@@ -1,18 +1,13 @@
-// tsconfig.json
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "moduleResolution": "Node",
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "module": "commonjs", // Usa CommonJS para módulos
+    "target": "es6",
+    "outDir": "dist",
+    "rootDir": "src",
     "strict": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "esModuleInterop": true, // Habilita interoperabilidad entre CommonJS y ES Modules
+    "experimentalDecorators": true, // Necesario para TypeORM
+    "emitDecoratorMetadata": true // Necesario para TypeORM
   },
-  "include": ["src"],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*"]
 }

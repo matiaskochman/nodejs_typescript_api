@@ -1,6 +1,13 @@
 // src/entities/Comment.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
-import { Post } from "./Post";
+
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from "typeorm";
+import { Post } from "./Post.js";
 
 @Entity()
 export class Comment {
@@ -16,6 +23,10 @@ export class Comment {
   @Column({ type: "varchar", length: 255 })
   email!: string;
 
+  @Column({ type: "int" })
+  postId!: number;
+
   @ManyToOne(() => Post, (post) => post.comments, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "postId" })
   post!: Post;
 }
