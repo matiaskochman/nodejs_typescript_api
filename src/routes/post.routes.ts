@@ -6,7 +6,8 @@ import {
   createPost,
   getPostById,
   getCommentsByPostId,
-} from "../controllers/post.controller.js";
+  softDeletePost, // Importar el nuevo método
+} from "../controllers/post.controller";
 
 const router = Router();
 
@@ -92,5 +93,26 @@ router.get("/:id", getPostById);
  *         description: Post no encontrado
  */
 router.get("/:post_id/comments", getCommentsByPostId);
+
+/**
+ * @swagger
+ * /api/posts/{id}:
+ *   delete:
+ *     summary: Elimina lógicamente un post por su ID
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Post eliminado correctamente
+ *       400:
+ *         description: ID inválido
+ *       404:
+ *         description: Post no encontrado
+ */
+router.delete("/:id", softDeletePost);
 
 export default router;

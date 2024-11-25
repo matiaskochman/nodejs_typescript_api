@@ -1,16 +1,22 @@
 // src/controllers/post.controller.ts
 
 import { Request, Response } from "express";
-import { AppDataSource } from "../ormconfig.js";
-import { Post } from "../entities/Post.js";
-import { Comment } from "../entities/Comment.js";
+import { dataSource, testDataSource } from "../ormconfig";
+import { Post } from "../entities/Post";
+import { Comment } from "../entities/Comment";
 
-const postRepository = AppDataSource.getRepository(Post);
-const commentRepository = AppDataSource.getRepository(Comment);
+const isTest = process.env.NODE_ENV === "test";
+const postRepository = isTest
+  ? testDataSource.getRepository(Post)
+  : dataSource.getRepository(Post);
+
+const commentRepository = dataSource.getRepository(Comment);
 
 /**
  * Obtiene todos los posts con sus comentarios.
  */
+// src/controllers/post.controller.ts
+
 export const getAllPosts = async (
   req: Request,
   res: Response
@@ -117,5 +123,34 @@ export const getCommentsByPostId = async (
     res
       .status(500)
       .json({ message: "Error al obtener los comentarios del post" });
+  }
+};
+
+export const softDeletePost = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    if (!id || isNaN(Number(id))) {
+      res.status(400).json({ message: "ID inválido" });
+      return;
+    }
+
+    const post = await postRepository.findOneBy({ id: Number(id) });
+
+    if (!post) {
+      res.status(404).json({ message: "Post no encontrado" });
+      return;
+    }
+
+    post.deletedAt = new Date();
+    await postRepository.save(post);
+
+    res.status(200).json({ message: "Post eliminado correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar el post:", error);
+    res.status(500).json({ message: "Error al eliminar el post" });
   }
 };

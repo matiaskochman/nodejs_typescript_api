@@ -7,7 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import { Post } from "./Post.js";
+import { Post } from "./Post";
 
 @Entity()
 export class Comment {

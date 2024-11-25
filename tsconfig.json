@@ -9,5 +9,6 @@
     "experimentalDecorators": true, // Necesario para TypeORM
     "emitDecoratorMetadata": true // Necesario para TypeORM
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "tests"]
 }

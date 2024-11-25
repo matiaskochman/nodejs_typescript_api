@@ -5,12 +5,13 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import "reflect-metadata";
-import { AppDataSource } from "./ormconfig";
+import { dataSource } from "./ormconfig";
 import app from "./app";
 
 const PORT = 3000;
 
-AppDataSource.initialize()
+dataSource
+  .initialize()
   .then(() => {
     console.log("Data Source has been initialized!");
     app.listen(PORT, () =>

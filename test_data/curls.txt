@@ -1,0 +1,75 @@
+curl -X POST http://localhost:3000/api/posts \
+  -H "Content-Type: application/json" \
+  -d '{
+        "title": "Primer Post",
+        "body": "Este es el contenido del primer post.",
+        "userId": 1
+      }'
+
+curl -X POST http://localhost:3000/api/posts \
+  -H "Content-Type: application/json" \
+  -d '{
+        "title": "Segundo Post",
+        "body": "Este es el contenido del segundo post.",
+        "userId": 2
+      }'
+
+
+curl -X GET http://localhost:3000/api/posts
+
+curl -X GET http://localhost:3000/api/posts/1
+
+curl -X GET http://localhost:3000/api/posts/999
+
+curl -X POST http://localhost:3000/api/comments \
+  -H "Content-Type: application/json" \
+  -d '{
+        "body": "Este es un comentario para el primer post.",
+        "name": "Ana García",
+        "email": "ana.garcia@example.com",
+        "postId": 1
+      }'
+
+curl -X POST http://localhost:3000/api/comments \
+  -H "Content-Type: application/json" \
+  -d '{
+        "body": "Este es un comentario para el segundo post.",
+        "name": "Carlos López",
+        "email": "carlos.lopez@example.com",
+        "postId": 2
+      }'
+
+curl -X GET http://localhost:3000/api/posts/1/comments
+
+curl -X GET http://localhost:3000/api/posts/2/comments
+
+curl -X PUT http://localhost:3000/api/comments/move \
+  -H "Content-Type: application/json" \
+  -d '{
+        "commentId": 1,
+        "newPostId": 2
+      }'
+
+curl -X GET http://localhost:3000/api/posts/1/comments
+
+curl -X GET http://localhost:3000/api/posts/2/comments
+
+curl -X DELETE http://localhost:3000/api/posts/1
+
+curl -X GET http://localhost:3000/api/posts
+
+curl -X GET http://localhost:3000/api/posts/1
+
+curl -X PATCH http://localhost:3000/api/posts/1/restore
+
+curl -X GET http://localhost:3000/api/posts
+
+curl -X POST http://localhost:3000/api/comments \
+  -H "Content-Type: application/json" \
+  -d '{
+        "body": "Comentario para un post eliminado.",
+        "name": "María Torres",
+        "email": "maria.torres@example.com",
+        "postId": 1
+      }'
+

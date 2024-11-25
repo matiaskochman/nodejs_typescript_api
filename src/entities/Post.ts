@@ -1,5 +1,12 @@
 // src/entities/Post.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
+
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  DeleteDateColumn,
+} from "typeorm";
 import { Comment } from "./Comment";
 
 @Entity()
@@ -21,4 +28,7 @@ export class Post {
 
   @OneToMany(() => Comment, (comment) => comment.post, { cascade: true })
   comments!: Comment[];
+
+  @DeleteDateColumn()
+  deletedAt?: Date | null; // Maneja soft delete automáticamente
 }
