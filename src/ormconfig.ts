@@ -1,4 +1,4 @@
-// ormconfig.ts
+// src/ormconfig.ts
 import { DataSource } from "typeorm";
 import { Post } from "./entities/Post.js";
 import { Comment } from "./entities/Comment.js";
@@ -10,8 +10,8 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "password",
   database: process.env.DB_NAME || "my_database",
-  synchronize: true,
-  logging: true,
+  synchronize: false,
+  logging: false,
   entities: [Post, Comment],
   migrations: [],
   subscribers: [],

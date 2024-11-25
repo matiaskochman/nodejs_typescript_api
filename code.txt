@@ -1,14 +1,19 @@
 
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/app.js
 
-import express from "express";
-import postRoutes from "./routes/post.routes.js"; // Incluye la extensión .js
-import commentRoutes from "./routes/comment.routes.js"; // Incluye la extensión .js
-const app = express();
-app.use(express.json());
-app.use("/api/posts", postRoutes);
-app.use("/api/comments", commentRoutes);
-export default app;
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const post_routes_js_1 = __importDefault(require("./routes/post.routes.js")); // Incluye la extensión .js
+const comment_routes_js_1 = __importDefault(require("./routes/comment.routes.js")); // Incluye la extensión .js
+const app = (0, express_1.default)();
+app.use(express_1.default.json());
+app.use("/api/posts", post_routes_js_1.default);
+app.use("/api/comments", comment_routes_js_1.default);
+exports.default = app;
 
 
 /********************/
@@ -16,13 +21,16 @@ export default app;
 
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/controllers/comment.controller.js
 
-import { AppDataSource } from "../ormconfig.js";
-import { Comment } from "../entities/Comment.js";
-const commentRepository = AppDataSource.getRepository(Comment);
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createComment = void 0;
+const ormconfig_js_1 = require("../ormconfig.js");
+const Comment_js_1 = require("../entities/Comment.js");
+const commentRepository = ormconfig_js_1.AppDataSource.getRepository(Comment_js_1.Comment);
 /**
  * Crea un nuevo comentario asociado a un post existente.
  */
-export const createComment = async (req, res) => {
+const createComment = async (req, res) => {
     try {
         const { body, name, email, postId } = req.body;
         // Validación de campos obligatorios
@@ -46,6 +54,7 @@ export const createComment = async (req, res) => {
         res.status(500).json({ message: "Error al crear el comentario" });
     }
 };
+exports.createComment = createComment;
 
 
 /********************/
@@ -53,13 +62,16 @@ export const createComment = async (req, res) => {
 
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/controllers/post.controller.js
 
-import { AppDataSource } from "../ormconfig.js";
-import { Post } from "../entities/Post.js";
-const postRepository = AppDataSource.getRepository(Post);
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getPostById = exports.createPost = exports.getAllPosts = void 0;
+const ormconfig_js_1 = require("../ormconfig.js");
+const Post_js_1 = require("../entities/Post.js");
+const postRepository = ormconfig_js_1.AppDataSource.getRepository(Post_js_1.Post);
 /**
  * Obtiene todos los posts con sus comentarios.
  */
-export const getAllPosts = async (req, res) => {
+const getAllPosts = async (req, res) => {
     try {
         const posts = await postRepository.find({ relations: ["comments"] });
         res.json(posts);
@@ -69,10 +81,11 @@ export const getAllPosts = async (req, res) => {
         res.status(500).json({ message: "Error al obtener los posts" });
     }
 };
+exports.getAllPosts = getAllPosts;
 /**
  * Crea un nuevo post con la posibilidad de incluir comentarios.
  */
-export const createPost = async (req, res) => {
+const createPost = async (req, res) => {
     try {
         const { title, body, image, userId, comments } = req.body;
         if (!title || !body || !userId) {
@@ -94,10 +107,11 @@ export const createPost = async (req, res) => {
         res.status(500).json({ message: "Error al crear el post" });
     }
 };
+exports.createPost = createPost;
 /**
  * Obtiene un post por su ID, incluyendo sus comentarios.
  */
-export const getPostById = async (req, res) => {
+const getPostById = async (req, res) => {
     try {
         const { id } = req.params;
         if (!id || isNaN(Number(id))) {
@@ -119,6 +133,7 @@ export const getPostById = async (req, res) => {
         res.status(500).json({ message: "Error al obtener el post" });
     }
 };
+exports.getPostById = getPostById;
 
 
 /********************/
@@ -126,6 +141,7 @@ export const getPostById = async (req, res) => {
 
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/entities/Comment.js
 
+"use strict";
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -135,34 +151,37 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
-import { Post } from "./Post.js";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Comment = void 0;
+// src/entities/Comment.ts
+const typeorm_1 = require("typeorm");
+const Post_1 = require("./Post");
 let Comment = class Comment {
 };
+exports.Comment = Comment;
 __decorate([
-    PrimaryGeneratedColumn(),
+    (0, typeorm_1.PrimaryGeneratedColumn)(),
     __metadata("design:type", Number)
 ], Comment.prototype, "id", void 0);
 __decorate([
-    Column({ type: "text" }),
+    (0, typeorm_1.Column)({ type: "text" }),
     __metadata("design:type", String)
 ], Comment.prototype, "body", void 0);
 __decorate([
-    Column({ type: "varchar", length: 255 }),
+    (0, typeorm_1.Column)({ type: "varchar", length: 255 }),
     __metadata("design:type", String)
 ], Comment.prototype, "name", void 0);
 __decorate([
-    Column({ type: "varchar", length: 255 }),
+    (0, typeorm_1.Column)({ type: "varchar", length: 255 }),
     __metadata("design:type", String)
 ], Comment.prototype, "email", void 0);
 __decorate([
-    ManyToOne(() => Post, (post) => post.comments, { onDelete: "CASCADE" }),
-    __metadata("design:type", Post)
+    (0, typeorm_1.ManyToOne)(() => Post_1.Post, (post) => post.comments, { onDelete: "CASCADE" }),
+    __metadata("design:type", Post_1.Post)
 ], Comment.prototype, "post", void 0);
-Comment = __decorate([
-    Entity()
+exports.Comment = Comment = __decorate([
+    (0, typeorm_1.Entity)()
 ], Comment);
-export { Comment };
 
 
 /********************/
@@ -170,6 +189,7 @@ export { Comment };
 
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/entities/Post.js
 
+"use strict";
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -179,38 +199,41 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
-import { Comment } from "./Comment.js";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Post = void 0;
+// src/entities/Post.ts
+const typeorm_1 = require("typeorm");
+const Comment_1 = require("./Comment");
 let Post = class Post {
 };
+exports.Post = Post;
 __decorate([
-    PrimaryGeneratedColumn(),
+    (0, typeorm_1.PrimaryGeneratedColumn)(),
     __metadata("design:type", Number)
 ], Post.prototype, "id", void 0);
 __decorate([
-    Column({ type: "varchar" }),
+    (0, typeorm_1.Column)({ type: "varchar" }),
     __metadata("design:type", String)
 ], Post.prototype, "title", void 0);
 __decorate([
-    Column({ type: "text", nullable: true }),
+    (0, typeorm_1.Column)({ type: "text", nullable: true }),
     __metadata("design:type", String)
 ], Post.prototype, "body", void 0);
 __decorate([
-    Column({ type: "varchar", nullable: true }),
+    (0, typeorm_1.Column)({ type: "varchar", nullable: true }),
     __metadata("design:type", String)
 ], Post.prototype, "image", void 0);
 __decorate([
-    Column({ type: "int" }),
+    (0, typeorm_1.Column)({ type: "int" }),
     __metadata("design:type", Number)
 ], Post.prototype, "userId", void 0);
 __decorate([
-    OneToMany(() => Comment, (comment) => comment.post, { cascade: true }),
+    (0, typeorm_1.OneToMany)(() => Comment_1.Comment, (comment) => comment.post, { cascade: true }),
     __metadata("design:type", Array)
 ], Post.prototype, "comments", void 0);
-Post = __decorate([
-    Entity()
+exports.Post = Post = __decorate([
+    (0, typeorm_1.Entity)()
 ], Post);
-export { Post };
 
 
 /********************/
@@ -218,14 +241,23 @@ export { Post };
 
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/index.js
 
-import "reflect-metadata";
-import { AppDataSource } from "./ormconfig.js";
-import app from "./app.js";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// src/index.ts
+require("reflect-metadata");
+const ormconfig_1 = require("./ormconfig");
+const app_1 = __importDefault(require("./app"));
+const dotenv_1 = __importDefault(require("dotenv"));
+// Cargar variables de entorno desde .env
+dotenv_1.default.config();
 const PORT = 3000;
-AppDataSource.initialize()
+ormconfig_1.AppDataSource.initialize()
     .then(() => {
     console.log("Data Source has been initialized!");
-    app.listen(PORT, () => console.log(`Server is running on http://localhost:${PORT}`));
+    app_1.default.listen(PORT, () => console.log(`Server is running on http://localhost:${PORT}`));
 })
     .catch((err) => {
     console.error("Error during Data Source initialization", err);
@@ -237,10 +269,31 @@ AppDataSource.initialize()
 
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/ormconfig.js
 
-import { DataSource } from "typeorm";
-import { Post } from "./entities/Post.js";
-import { Comment } from "./entities/Comment.js";
-export const AppDataSource = new DataSource({
+"use strict";
+// // ormconfig.ts
+// import { DataSource } from "typeorm";
+// import { Post } from "./entities/Post.js";
+// import { Comment } from "./entities/Comment.js";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AppDataSource = void 0;
+// export const AppDataSource = new DataSource({
+//   type: "mysql",
+//   host: process.env.DB_HOST || "localhost",
+//   port: parseInt(process.env.DB_PORT || "5555"),
+//   username: process.env.DB_USER || "root",
+//   password: process.env.DB_PASSWORD || "password",
+//   database: process.env.DB_NAME || "my_database",
+//   synchronize: true,
+//   logging: true,
+//   entities: [Post, Comment],
+//   migrations: [],
+//   subscribers: [],
+// });
+// src/ormconfig.ts
+const typeorm_1 = require("typeorm");
+const Post_js_1 = require("./entities/Post.js");
+const Comment_js_1 = require("./entities/Comment.js");
+exports.AppDataSource = new typeorm_1.DataSource({
     type: "mysql",
     host: process.env.DB_HOST || "localhost",
     port: parseInt(process.env.DB_PORT || "5555"),
@@ -249,7 +302,7 @@ export const AppDataSource = new DataSource({
     database: process.env.DB_NAME || "my_database",
     synchronize: true,
     logging: true,
-    entities: [Post, Comment],
+    entities: [Post_js_1.Post, Comment_js_1.Comment],
     migrations: [],
     subscribers: [],
 });
@@ -260,11 +313,13 @@ export const AppDataSource = new DataSource({
 
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/routes/comment.routes.js
 
-import { Router } from "express";
-import { createComment } from "../controllers/comment.controller.js";
-const router = Router();
-router.post("/", createComment);
-export default router;
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const comment_controller_js_1 = require("../controllers/comment.controller.js");
+const router = (0, express_1.Router)();
+router.post("/", comment_controller_js_1.createComment);
+exports.default = router;
 
 
 /********************/
@@ -272,13 +327,15 @@ export default router;
 
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/routes/post.routes.js
 
-import { Router } from "express";
-import { getAllPosts, createPost, getPostById, } from "../controllers/post.controller.js";
-const router = Router();
-router.get("/", getAllPosts);
-router.post("/", createPost);
-router.get("/:id", getPostById);
-export default router;
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const post_controller_js_1 = require("../controllers/post.controller.js");
+const router = (0, express_1.Router)();
+router.get("/", post_controller_js_1.getAllPosts);
+router.post("/", post_controller_js_1.createPost);
+router.get("/:id", post_controller_js_1.getPostById);
+exports.default = router;
 
 
 /********************/
@@ -441,8 +498,9 @@ export const getPostById = async (
 
 /Users/matiaskochman/dev/personal/tests/post_comments/src/entities/Comment.ts
 
+// src/entities/Comment.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
-import { Post } from "./Post.js";
+import { Post } from "./Post";
 
 @Entity()
 export class Comment {
@@ -459,7 +517,7 @@ export class Comment {
   email!: string;
 
   @ManyToOne(() => Post, (post) => post.comments, { onDelete: "CASCADE" })
-  post!: Post; // Usamos una función en la referencia
+  post!: Post;
 }
 
 
@@ -468,8 +526,9 @@ export class Comment {
 
 /Users/matiaskochman/dev/personal/tests/post_comments/src/entities/Post.ts
 
+// src/entities/Post.ts
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
-import { Comment } from "./Comment.js";
+import { Comment } from "./Comment";
 
 @Entity()
 export class Post {
@@ -489,7 +548,7 @@ export class Post {
   userId!: number;
 
   @OneToMany(() => Comment, (comment) => comment.post, { cascade: true })
-  comments!: Comment[]; // Usamos una función en la referencia
+  comments!: Comment[];
 }
 
 
@@ -498,9 +557,14 @@ export class Post {
 
 /Users/matiaskochman/dev/personal/tests/post_comments/src/index.ts
 
+// src/index.ts
 import "reflect-metadata";
-import { AppDataSource } from "./ormconfig.js";
-import app from "./app.js";
+import { AppDataSource } from "./ormconfig";
+import app from "./app";
+import dotenv from "dotenv";
+
+// Cargar variables de entorno desde .env
+dotenv.config();
 
 const PORT = 3000;
 
@@ -521,6 +585,26 @@ AppDataSource.initialize()
 
 /Users/matiaskochman/dev/personal/tests/post_comments/src/ormconfig.ts
 
+// // ormconfig.ts
+// import { DataSource } from "typeorm";
+// import { Post } from "./entities/Post.js";
+// import { Comment } from "./entities/Comment.js";
+
+// export const AppDataSource = new DataSource({
+//   type: "mysql",
+//   host: process.env.DB_HOST || "localhost",
+//   port: parseInt(process.env.DB_PORT || "5555"),
+//   username: process.env.DB_USER || "root",
+//   password: process.env.DB_PASSWORD || "password",
+//   database: process.env.DB_NAME || "my_database",
+//   synchronize: true,
+//   logging: true,
+//   entities: [Post, Comment],
+//   migrations: [],
+//   subscribers: [],
+// });
+
+// src/ormconfig.ts
 import { DataSource } from "typeorm";
 import { Post } from "./entities/Post.js";
 import { Comment } from "./entities/Comment.js";

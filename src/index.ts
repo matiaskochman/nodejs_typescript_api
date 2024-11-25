@@ -1,6 +1,12 @@
+// src/index.ts
+import dotenv from "dotenv";
+
+// Cargar variables de entorno desde .env
+dotenv.config();
+
 import "reflect-metadata";
-import { AppDataSource } from "./ormconfig.js";
-import app from "./app.js";
+import { AppDataSource } from "./ormconfig";
+import app from "./app";
 
 const PORT = 3000;
 
