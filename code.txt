@@ -247,12 +247,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 // src/index.ts
-require("reflect-metadata");
-const ormconfig_1 = require("./ormconfig");
-const app_1 = __importDefault(require("./app"));
 const dotenv_1 = __importDefault(require("dotenv"));
 // Cargar variables de entorno desde .env
 dotenv_1.default.config();
+require("reflect-metadata");
+const ormconfig_1 = require("./ormconfig");
+const app_1 = __importDefault(require("./app"));
 const PORT = 3000;
 ormconfig_1.AppDataSource.initialize()
     .then(() => {
@@ -270,25 +270,8 @@ ormconfig_1.AppDataSource.initialize()
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/ormconfig.js
 
 "use strict";
-// // ormconfig.ts
-// import { DataSource } from "typeorm";
-// import { Post } from "./entities/Post.js";
-// import { Comment } from "./entities/Comment.js";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppDataSource = void 0;
-// export const AppDataSource = new DataSource({
-//   type: "mysql",
-//   host: process.env.DB_HOST || "localhost",
-//   port: parseInt(process.env.DB_PORT || "5555"),
-//   username: process.env.DB_USER || "root",
-//   password: process.env.DB_PASSWORD || "password",
-//   database: process.env.DB_NAME || "my_database",
-//   synchronize: true,
-//   logging: true,
-//   entities: [Post, Comment],
-//   migrations: [],
-//   subscribers: [],
-// });
 // src/ormconfig.ts
 const typeorm_1 = require("typeorm");
 const Post_js_1 = require("./entities/Post.js");
@@ -300,8 +283,8 @@ exports.AppDataSource = new typeorm_1.DataSource({
     username: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "password",
     database: process.env.DB_NAME || "my_database",
-    synchronize: true,
-    logging: true,
+    synchronize: false,
+    logging: false,
     entities: [Post_js_1.Post, Comment_js_1.Comment],
     migrations: [],
     subscribers: [],
@@ -558,13 +541,14 @@ export class Post {
 /Users/matiaskochman/dev/personal/tests/post_comments/src/index.ts
 
 // src/index.ts
-import "reflect-metadata";
-import { AppDataSource } from "./ormconfig";
-import app from "./app";
 import dotenv from "dotenv";
 
 // Cargar variables de entorno desde .env
 dotenv.config();
+
+import "reflect-metadata";
+import { AppDataSource } from "./ormconfig";
+import app from "./app";
 
 const PORT = 3000;
 
@@ -585,25 +569,6 @@ AppDataSource.initialize()
 
 /Users/matiaskochman/dev/personal/tests/post_comments/src/ormconfig.ts
 
-// // ormconfig.ts
-// import { DataSource } from "typeorm";
-// import { Post } from "./entities/Post.js";
-// import { Comment } from "./entities/Comment.js";
-
-// export const AppDataSource = new DataSource({
-//   type: "mysql",
-//   host: process.env.DB_HOST || "localhost",
-//   port: parseInt(process.env.DB_PORT || "5555"),
-//   username: process.env.DB_USER || "root",
-//   password: process.env.DB_PASSWORD || "password",
-//   database: process.env.DB_NAME || "my_database",
-//   synchronize: true,
-//   logging: true,
-//   entities: [Post, Comment],
-//   migrations: [],
-//   subscribers: [],
-// });
-
 // src/ormconfig.ts
 import { DataSource } from "typeorm";
 import { Post } from "./entities/Post.js";
@@ -616,8 +581,8 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "password",
   database: process.env.DB_NAME || "my_database",
-  synchronize: true,
-  logging: true,
+  synchronize: false,
+  logging: false,
   entities: [Post, Comment],
   migrations: [],
   subscribers: [],
