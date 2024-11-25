@@ -1,0 +1,17 @@
+// tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+    // Otras configuraciones según necesites
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

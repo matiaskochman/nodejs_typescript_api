@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: my_database
+      MYSQL_USER: my_user
+      MYSQL_PASSWORD: my_password
+    ports:
+      - "5555:5555"
+    command: ["--port=5555"] # Configura MySQL para escuchar en el puerto 5555
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-P",
+          "5555",
+          "-p${MYSQL_ROOT_PASSWORD}",
+        ]
+      interval: 10s # Comprobar cada 10 segundos
+      timeout: 5s # Tiempo máximo de espera
+      retries: 5 # Reintenta 5 veces antes de marcarlo como no saludable
+      start_period: 30s # Espera 30 segundos antes de iniciar los checks
+
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: api-container
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy # La API solo se inicia si MySQL está saludable
+  #   environment:
+  #     DB_HOST: mysql # Nombre del servicio MySQL
+  #     DB_PORT: 5555 # Puerto configurado para MySQL
+  #     DB_USER: my_user
+  #     DB_PASSWORD: my_password
+  #     DB_NAME: my_database
+  #   networks:
+  #     - app-network
+
+volumes:
+  mysql-data:
+
+networks:
+  app-network:

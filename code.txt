@@ -1,0 +1,580 @@
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/app.js
+
+import express from "express";
+import postRoutes from "./routes/post.routes.js"; // Incluye la extensión .js
+import commentRoutes from "./routes/comment.routes.js"; // Incluye la extensión .js
+const app = express();
+app.use(express.json());
+app.use("/api/posts", postRoutes);
+app.use("/api/comments", commentRoutes);
+export default app;
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/controllers/comment.controller.js
+
+import { AppDataSource } from "../ormconfig.js";
+import { Comment } from "../entities/Comment.js";
+const commentRepository = AppDataSource.getRepository(Comment);
+/**
+ * Crea un nuevo comentario asociado a un post existente.
+ */
+export const createComment = async (req, res) => {
+    try {
+        const { body, name, email, postId } = req.body;
+        // Validación de campos obligatorios
+        if (!body || !name || !email || !postId) {
+            res.status(400).json({ message: "Faltan campos obligatorios" });
+            return;
+        }
+        // Crear el comentario
+        const comment = commentRepository.create({
+            body,
+            name,
+            email,
+            post: { id: postId },
+        });
+        // Guardar el comentario en la base de datos
+        const savedComment = await commentRepository.save(comment);
+        res.status(201).json(savedComment);
+    }
+    catch (error) {
+        console.error("Error al crear el comentario:", error);
+        res.status(500).json({ message: "Error al crear el comentario" });
+    }
+};
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/controllers/post.controller.js
+
+import { AppDataSource } from "../ormconfig.js";
+import { Post } from "../entities/Post.js";
+const postRepository = AppDataSource.getRepository(Post);
+/**
+ * Obtiene todos los posts con sus comentarios.
+ */
+export const getAllPosts = async (req, res) => {
+    try {
+        const posts = await postRepository.find({ relations: ["comments"] });
+        res.json(posts);
+    }
+    catch (error) {
+        console.error("Error al obtener los posts:", error);
+        res.status(500).json({ message: "Error al obtener los posts" });
+    }
+};
+/**
+ * Crea un nuevo post con la posibilidad de incluir comentarios.
+ */
+export const createPost = async (req, res) => {
+    try {
+        const { title, body, image, userId, comments } = req.body;
+        if (!title || !body || !userId) {
+            res.status(400).json({ message: "Faltan campos obligatorios" });
+            return;
+        }
+        const post = postRepository.create({
+            title,
+            body,
+            image,
+            userId,
+            comments,
+        });
+        const savedPost = await postRepository.save(post);
+        res.status(201).json(savedPost);
+    }
+    catch (error) {
+        console.error("Error al crear el post:", error);
+        res.status(500).json({ message: "Error al crear el post" });
+    }
+};
+/**
+ * Obtiene un post por su ID, incluyendo sus comentarios.
+ */
+export const getPostById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id || isNaN(Number(id))) {
+            res.status(400).json({ message: "ID inválido" });
+            return;
+        }
+        const post = await postRepository.findOne({
+            where: { id: Number(id) },
+            relations: ["comments"],
+        });
+        if (!post) {
+            res.status(404).json({ message: "Post no encontrado" });
+            return;
+        }
+        res.json(post);
+    }
+    catch (error) {
+        console.error("Error al obtener el post:", error);
+        res.status(500).json({ message: "Error al obtener el post" });
+    }
+};
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/entities/Comment.js
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
+import { Post } from "./Post.js";
+let Comment = class Comment {
+};
+__decorate([
+    PrimaryGeneratedColumn(),
+    __metadata("design:type", Number)
+], Comment.prototype, "id", void 0);
+__decorate([
+    Column({ type: "text" }),
+    __metadata("design:type", String)
+], Comment.prototype, "body", void 0);
+__decorate([
+    Column({ type: "varchar", length: 255 }),
+    __metadata("design:type", String)
+], Comment.prototype, "name", void 0);
+__decorate([
+    Column({ type: "varchar", length: 255 }),
+    __metadata("design:type", String)
+], Comment.prototype, "email", void 0);
+__decorate([
+    ManyToOne(() => Post, (post) => post.comments, { onDelete: "CASCADE" }),
+    __metadata("design:type", Post)
+], Comment.prototype, "post", void 0);
+Comment = __decorate([
+    Entity()
+], Comment);
+export { Comment };
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/entities/Post.js
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
+import { Comment } from "./Comment.js";
+let Post = class Post {
+};
+__decorate([
+    PrimaryGeneratedColumn(),
+    __metadata("design:type", Number)
+], Post.prototype, "id", void 0);
+__decorate([
+    Column({ type: "varchar" }),
+    __metadata("design:type", String)
+], Post.prototype, "title", void 0);
+__decorate([
+    Column({ type: "text", nullable: true }),
+    __metadata("design:type", String)
+], Post.prototype, "body", void 0);
+__decorate([
+    Column({ type: "varchar", nullable: true }),
+    __metadata("design:type", String)
+], Post.prototype, "image", void 0);
+__decorate([
+    Column({ type: "int" }),
+    __metadata("design:type", Number)
+], Post.prototype, "userId", void 0);
+__decorate([
+    OneToMany(() => Comment, (comment) => comment.post, { cascade: true }),
+    __metadata("design:type", Array)
+], Post.prototype, "comments", void 0);
+Post = __decorate([
+    Entity()
+], Post);
+export { Post };
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/index.js
+
+import "reflect-metadata";
+import { AppDataSource } from "./ormconfig.js";
+import app from "./app.js";
+const PORT = 3000;
+AppDataSource.initialize()
+    .then(() => {
+    console.log("Data Source has been initialized!");
+    app.listen(PORT, () => console.log(`Server is running on http://localhost:${PORT}`));
+})
+    .catch((err) => {
+    console.error("Error during Data Source initialization", err);
+});
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/ormconfig.js
+
+import { DataSource } from "typeorm";
+import { Post } from "./entities/Post.js";
+import { Comment } from "./entities/Comment.js";
+export const AppDataSource = new DataSource({
+    type: "mysql",
+    host: process.env.DB_HOST || "localhost",
+    port: parseInt(process.env.DB_PORT || "5555"),
+    username: process.env.DB_USER || "root",
+    password: process.env.DB_PASSWORD || "password",
+    database: process.env.DB_NAME || "my_database",
+    synchronize: true,
+    logging: true,
+    entities: [Post, Comment],
+    migrations: [],
+    subscribers: [],
+});
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/routes/comment.routes.js
+
+import { Router } from "express";
+import { createComment } from "../controllers/comment.controller.js";
+const router = Router();
+router.post("/", createComment);
+export default router;
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/routes/post.routes.js
+
+import { Router } from "express";
+import { getAllPosts, createPost, getPostById, } from "../controllers/post.controller.js";
+const router = Router();
+router.get("/", getAllPosts);
+router.post("/", createPost);
+router.get("/:id", getPostById);
+export default router;
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/src/app.ts
+
+import express from "express";
+import postRoutes from "./routes/post.routes.js"; // Incluye la extensión .js
+import commentRoutes from "./routes/comment.routes.js"; // Incluye la extensión .js
+
+const app = express();
+
+app.use(express.json());
+
+app.use("/api/posts", postRoutes);
+app.use("/api/comments", commentRoutes);
+
+export default app;
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/src/controllers/comment.controller.ts
+
+import { Request, Response } from "express";
+import { AppDataSource } from "../ormconfig.js";
+import { Comment } from "../entities/Comment.js";
+
+const commentRepository = AppDataSource.getRepository(Comment);
+
+/**
+ * Crea un nuevo comentario asociado a un post existente.
+ */
+export const createComment = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { body, name, email, postId } = req.body;
+
+    // Validación de campos obligatorios
+    if (!body || !name || !email || !postId) {
+      res.status(400).json({ message: "Faltan campos obligatorios" });
+      return;
+    }
+
+    // Crear el comentario
+    const comment = commentRepository.create({
+      body,
+      name,
+      email,
+      post: { id: postId },
+    });
+
+    // Guardar el comentario en la base de datos
+    const savedComment = await commentRepository.save(comment);
+
+    res.status(201).json(savedComment);
+  } catch (error) {
+    console.error("Error al crear el comentario:", error);
+    res.status(500).json({ message: "Error al crear el comentario" });
+  }
+};
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/src/controllers/post.controller.ts
+
+import { Request, Response } from "express";
+import { AppDataSource } from "../ormconfig.js";
+import { Post } from "../entities/Post.js";
+
+const postRepository = AppDataSource.getRepository(Post);
+
+/**
+ * Obtiene todos los posts con sus comentarios.
+ */
+export const getAllPosts = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const posts = await postRepository.find({ relations: ["comments"] });
+    res.json(posts);
+  } catch (error) {
+    console.error("Error al obtener los posts:", error);
+    res.status(500).json({ message: "Error al obtener los posts" });
+  }
+};
+
+/**
+ * Crea un nuevo post con la posibilidad de incluir comentarios.
+ */
+export const createPost = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { title, body, image, userId, comments } = req.body;
+
+    if (!title || !body || !userId) {
+      res.status(400).json({ message: "Faltan campos obligatorios" });
+      return;
+    }
+
+    const post = postRepository.create({
+      title,
+      body,
+      image,
+      userId,
+      comments,
+    });
+    const savedPost = await postRepository.save(post);
+    res.status(201).json(savedPost);
+  } catch (error) {
+    console.error("Error al crear el post:", error);
+    res.status(500).json({ message: "Error al crear el post" });
+  }
+};
+
+/**
+ * Obtiene un post por su ID, incluyendo sus comentarios.
+ */
+export const getPostById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    if (!id || isNaN(Number(id))) {
+      res.status(400).json({ message: "ID inválido" });
+      return;
+    }
+
+    const post = await postRepository.findOne({
+      where: { id: Number(id) },
+      relations: ["comments"],
+    });
+
+    if (!post) {
+      res.status(404).json({ message: "Post no encontrado" });
+      return;
+    }
+
+    res.json(post);
+  } catch (error) {
+    console.error("Error al obtener el post:", error);
+    res.status(500).json({ message: "Error al obtener el post" });
+  }
+};
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/src/entities/Comment.ts
+
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
+import { Post } from "./Post.js";
+
+@Entity()
+export class Comment {
+  @PrimaryGeneratedColumn()
+  id!: number;
+
+  @Column({ type: "text" })
+  body!: string;
+
+  @Column({ type: "varchar", length: 255 })
+  name!: string;
+
+  @Column({ type: "varchar", length: 255 })
+  email!: string;
+
+  @ManyToOne(() => Post, (post) => post.comments, { onDelete: "CASCADE" })
+  post!: Post; // Usamos una función en la referencia
+}
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/src/entities/Post.ts
+
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
+import { Comment } from "./Comment.js";
+
+@Entity()
+export class Post {
+  @PrimaryGeneratedColumn()
+  id!: number;
+
+  @Column({ type: "varchar" })
+  title!: string;
+
+  @Column({ type: "text", nullable: true })
+  body?: string;
+
+  @Column({ type: "varchar", nullable: true })
+  image?: string;
+
+  @Column({ type: "int" })
+  userId!: number;
+
+  @OneToMany(() => Comment, (comment) => comment.post, { cascade: true })
+  comments!: Comment[]; // Usamos una función en la referencia
+}
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/src/index.ts
+
+import "reflect-metadata";
+import { AppDataSource } from "./ormconfig.js";
+import app from "./app.js";
+
+const PORT = 3000;
+
+AppDataSource.initialize()
+  .then(() => {
+    console.log("Data Source has been initialized!");
+    app.listen(PORT, () =>
+      console.log(`Server is running on http://localhost:${PORT}`)
+    );
+  })
+  .catch((err) => {
+    console.error("Error during Data Source initialization", err);
+  });
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/src/ormconfig.ts
+
+import { DataSource } from "typeorm";
+import { Post } from "./entities/Post.js";
+import { Comment } from "./entities/Comment.js";
+
+export const AppDataSource = new DataSource({
+  type: "mysql",
+  host: process.env.DB_HOST || "localhost",
+  port: parseInt(process.env.DB_PORT || "5555"),
+  username: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "password",
+  database: process.env.DB_NAME || "my_database",
+  synchronize: true,
+  logging: true,
+  entities: [Post, Comment],
+  migrations: [],
+  subscribers: [],
+});
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/src/routes/comment.routes.ts
+
+import { Router } from "express";
+import { createComment } from "../controllers/comment.controller.js";
+
+const router = Router();
+
+router.post("/", createComment);
+
+export default router;
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/src/routes/post.routes.ts
+
+import { Router } from "express";
+import {
+  getAllPosts,
+  createPost,
+  getPostById,
+} from "../controllers/post.controller.js";
+
+const router = Router();
+
+router.get("/", getAllPosts);
+router.post("/", createPost);
+router.get("/:id", getPostById);
+
+export default router;
+
+
+/********************/
+
