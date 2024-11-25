@@ -1,4 +1,67 @@
 
+/Users/matiaskochman/dev/personal/tests/post_comments/.env
+
+DB_HOST=localhost
+DB_PORT=5555
+DB_USER=my_user
+DB_PASSWORD=my_password
+DB_NAME=my_database
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/src/swagger.config.ts
+
+const swaggerOptions = {
+  openapi: "3.0.0",
+  info: {
+    title: "Post Comments API",
+    version: "1.0.0",
+    description: "API para gestionar posts y comentarios",
+  },
+  servers: [
+    {
+      url: "http://localhost:3000",
+      description: "Servidor local",
+    },
+  ],
+  components: {
+    schemas: {
+      Post: {
+        type: "object",
+        properties: {
+          id: { type: "integer" },
+          title: { type: "string" },
+          body: { type: "string" },
+          image: { type: "string", nullable: true },
+          userId: { type: "integer" },
+          comments: {
+            type: "array",
+            items: { $ref: "#/components/schemas/Comment" },
+          },
+        },
+      },
+      Comment: {
+        type: "object",
+        properties: {
+          id: { type: "integer" },
+          body: { type: "string" },
+          name: { type: "string" },
+          email: { type: "string" },
+          postId: { type: "integer" },
+        },
+      },
+    },
+  },
+};
+
+export default swaggerOptions;
+
+
+/********************/
+
+
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/app.js
 
 "use strict";
@@ -7,10 +70,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const post_routes_js_1 = __importDefault(require("./routes/post.routes.js")); // Incluye la extensión .js
-const comment_routes_js_1 = __importDefault(require("./routes/comment.routes.js")); // Incluye la extensión .js
+const post_routes_js_1 = __importDefault(require("./routes/post.routes.js"));
+const comment_routes_js_1 = __importDefault(require("./routes/comment.routes.js"));
+const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
+const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
+const swagger_config_js_1 = __importDefault(require("./swagger.config.js"));
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
+// Configuración de Swagger
+const swaggerSpec = (0, swagger_jsdoc_1.default)({
+    definition: swagger_config_js_1.default,
+    apis: ["./src/routes/*.ts"],
+});
+app.use("/api-docs", swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerSpec));
 app.use("/api/posts", post_routes_js_1.default);
 app.use("/api/comments", comment_routes_js_1.default);
 exports.default = app;
@@ -315,10 +387,111 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const post_controller_js_1 = require("../controllers/post.controller.js");
 const router = (0, express_1.Router)();
+/**
+ * @swagger
+ * /api/posts:
+ *   get:
+ *     summary: Obtiene todos los posts
+ *     responses:
+ *       200:
+ *         description: Lista de posts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: "#/components/schemas/Post"
+ */
 router.get("/", post_controller_js_1.getAllPosts);
+/**
+ * @swagger
+ * /api/posts:
+ *   post:
+ *     summary: Crea un nuevo post
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: "#/components/schemas/Post"
+ *     responses:
+ *       201:
+ *         description: Post creado
+ */
 router.post("/", post_controller_js_1.createPost);
+/**
+ * @swagger
+ * /api/posts/{id}:
+ *   get:
+ *     summary: Obtiene un post por ID
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Post encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/Post"
+ */
 router.get("/:id", post_controller_js_1.getPostById);
 exports.default = router;
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/swagger.config.js
+
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const swaggerOptions = {
+    openapi: "3.0.0",
+    info: {
+        title: "Post Comments API",
+        version: "1.0.0",
+        description: "API para gestionar posts y comentarios",
+    },
+    servers: [
+        {
+            url: "http://localhost:3000",
+            description: "Servidor local",
+        },
+    ],
+    components: {
+        schemas: {
+            Post: {
+                type: "object",
+                properties: {
+                    id: { type: "integer" },
+                    title: { type: "string" },
+                    body: { type: "string" },
+                    image: { type: "string", nullable: true },
+                    userId: { type: "integer" },
+                    comments: {
+                        type: "array",
+                        items: { $ref: "#/components/schemas/Comment" },
+                    },
+                },
+            },
+            Comment: {
+                type: "object",
+                properties: {
+                    id: { type: "integer" },
+                    body: { type: "string" },
+                    name: { type: "string" },
+                    email: { type: "string" },
+                    postId: { type: "integer" },
+                },
+            },
+        },
+    },
+};
+exports.default = swaggerOptions;
 
 
 /********************/
@@ -327,12 +500,22 @@ exports.default = router;
 /Users/matiaskochman/dev/personal/tests/post_comments/src/app.ts
 
 import express from "express";
-import postRoutes from "./routes/post.routes.js"; // Incluye la extensión .js
-import commentRoutes from "./routes/comment.routes.js"; // Incluye la extensión .js
+import postRoutes from "./routes/post.routes.js";
+import commentRoutes from "./routes/comment.routes.js";
+import swaggerUi from "swagger-ui-express";
+import swaggerJsDoc from "swagger-jsdoc";
+import swaggerOptions from "./swagger.config.js";
 
 const app = express();
 
 app.use(express.json());
+
+// Configuración de Swagger
+const swaggerSpec = swaggerJsDoc({
+  definition: swaggerOptions,
+  apis: ["./src/routes/*.ts"],
+});
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoutes);
@@ -618,8 +801,59 @@ import {
 
 const router = Router();
 
+/**
+ * @swagger
+ * /api/posts:
+ *   get:
+ *     summary: Obtiene todos los posts
+ *     responses:
+ *       200:
+ *         description: Lista de posts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: "#/components/schemas/Post"
+ */
 router.get("/", getAllPosts);
+
+/**
+ * @swagger
+ * /api/posts:
+ *   post:
+ *     summary: Crea un nuevo post
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: "#/components/schemas/Post"
+ *     responses:
+ *       201:
+ *         description: Post creado
+ */
 router.post("/", createPost);
+
+/**
+ * @swagger
+ * /api/posts/{id}:
+ *   get:
+ *     summary: Obtiene un post por ID
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Post encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/Post"
+ */
 router.get("/:id", getPostById);
 
 export default router;
