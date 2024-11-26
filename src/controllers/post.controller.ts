@@ -154,3 +154,33 @@ export const softDeletePost = async (
     res.status(500).json({ message: "Error al eliminar el post" });
   }
 };
+
+/**
+ * Restaurar un post eliminado lógicamente.
+ */
+export const restorePost = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const postId = Number(id);
+
+    // Buscar el post incluyendo los eliminados
+    const post = await postRepository.findOne({
+      where: { id: postId },
+      withDeleted: true,
+    });
+
+    if (!post || !post.deletedAt) {
+      return res
+        .status(404)
+        .json({ message: "Post no encontrado o no está eliminado" });
+    }
+
+    // Restaurar el post
+    await postRepository.restore(postId);
+
+    return res.status(200).json({ message: "Post restaurado correctamente" });
+  } catch (error) {
+    console.error("Error al restaurar el post:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};

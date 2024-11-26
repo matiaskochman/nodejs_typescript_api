@@ -7,6 +7,7 @@ import {
   getPostById,
   getCommentsByPostId,
   softDeletePost, // Importar el nuevo método
+  restorePost,
 } from "../controllers/post.controller";
 
 const router = Router();
@@ -115,4 +116,5 @@ router.get("/:post_id/comments", getCommentsByPostId);
  */
 router.delete("/:id", softDeletePost);
 
+router.patch("/:id/restore", restorePost); // Ruta para restaurar el post
 export default router;
