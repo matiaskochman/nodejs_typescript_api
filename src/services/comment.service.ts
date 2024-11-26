@@ -4,25 +4,14 @@ import { Repository } from "typeorm";
 import { Comment } from "../entities/Comment";
 import { dataSource, testDataSource } from "../ormconfig";
 import { Post } from "../entities/Post";
-
-interface CreateCommentDTO {
-  body: string;
-  name: string;
-  email: string;
-  postId: number;
-}
-
-interface MoveCommentDTO {
-  commentId: number;
-  newPostId: number;
-}
+import { CommentCreateDTO, CommentMoveDTO } from "../dtos/comment.dtos";
 
 export class CommentService {
-  private commentRepository: Repository<Comment>;
-  private postRepository: Repository<Post>;
+  private readonly commentRepository: Repository<Comment>;
+  private readonly postRepository: Repository<Post>;
 
   constructor() {
-    const isTest = process.env.NODE_ENV === "test";
+    const isTest: boolean = process.env.NODE_ENV === "test";
     this.commentRepository = isTest
       ? testDataSource.getRepository(Comment)
       : dataSource.getRepository(Comment);
@@ -31,58 +20,76 @@ export class CommentService {
       : dataSource.getRepository(Post);
   }
 
-  // Crear un nuevo comentario
-  async createComment(data: CreateCommentDTO): Promise<Comment> {
-    const { body, name, email, postId } = data;
+  /**
+   * Crear un nuevo comentario.
+   */
+  async createComment(data: CommentCreateDTO): Promise<Comment> {
+    const { body, name, email, postId }: CommentCreateDTO = data;
 
     if (!body || !name || !email || !postId) {
       throw { status: 400, message: "Faltan campos obligatorios" };
     }
 
+    const postIdNumber: number = Number(postId);
+    if (isNaN(postIdNumber)) {
+      throw { status: 400, message: "ID de post inválido" };
+    }
+
     // Verificar que el post existe y no está eliminado
-    const post = await this.postRepository.findOne({ where: { id: postId } });
+    const post: Post | null = await this.postRepository.findOne({
+      where: { id: postIdNumber },
+    });
+
     if (!post || post.deletedAt) {
       throw { status: 404, message: "Post no encontrado o eliminado" };
     }
 
-    const comment = this.commentRepository.create({
+    const comment: Comment = this.commentRepository.create({
       body,
       name,
       email,
-      postId,
+      postId: postIdNumber,
     });
+
     await this.commentRepository.save(comment);
     return comment;
   }
 
-  // Mover un comentario a otro post
-  async moveComment(data: MoveCommentDTO): Promise<Comment> {
-    const { commentId, newPostId } = data;
+  /**
+   * Mover un comentario a otro post.
+   */
+  async moveComment(data: CommentMoveDTO): Promise<Comment> {
+    const { commentId, newPostId }: CommentMoveDTO = data;
 
-    if (!commentId || !newPostId) {
-      throw { status: 400, message: "Faltan campos obligatorios" };
+    const commentIdNumber: number = Number(commentId);
+    const newPostIdNumber: number = Number(newPostId);
+
+    if (isNaN(commentIdNumber) || isNaN(newPostIdNumber)) {
+      throw { status: 400, message: "IDs inválidos" };
     }
 
     // Verificar que el comentario existe
-    const comment = await this.commentRepository.findOne({
-      where: { id: commentId },
+    const comment: Comment | null = await this.commentRepository.findOne({
+      where: { id: commentIdNumber },
     });
+
     if (!comment) {
       throw { status: 404, message: "Comentario no encontrado" };
     }
 
     // Verificar que el nuevo post existe y no está eliminado
-    const newPost = await this.postRepository.findOne({
-      where: { id: newPostId },
+    const newPost: Post | null = await this.postRepository.findOne({
+      where: { id: newPostIdNumber },
     });
+
     if (!newPost || newPost.deletedAt) {
       throw { status: 404, message: "Nuevo post no encontrado o eliminado" };
     }
 
     // Actualizar el postId del comentario
-    comment.postId = newPostId;
-    await this.commentRepository.save(comment);
+    comment.postId = newPostIdNumber;
 
+    await this.commentRepository.save(comment);
     return comment;
   }
 }
