@@ -1,8 +1,45 @@
+// src/routes/comment.routes.ts
+
 import { Router } from "express";
 import { createComment, moveComment } from "../controllers/comment.controller";
 
 const router = Router();
 
+/**
+ * @swagger
+ * /api/comments:
+ *   post:
+ *     summary: Crea un nuevo comentario
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               body:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               postId:
+ *                 type: integer
+ *             required:
+ *               - body
+ *               - name
+ *               - email
+ *               - postId
+ *     responses:
+ *       201:
+ *         description: Comentario creado
+ *       400:
+ *         description: Faltan campos obligatorios
+ *       404:
+ *         description: Post no encontrado o eliminado
+ *       500:
+ *         description: Error interno del servidor
+ */
 router.post("/", createComment);
 
 /**

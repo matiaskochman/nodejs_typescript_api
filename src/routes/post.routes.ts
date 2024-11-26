@@ -6,7 +6,7 @@ import {
   createPost,
   getPostById,
   getCommentsByPostId,
-  softDeletePost, // Importar el nuevo método
+  softDeletePost,
   restorePost,
 } from "../controllers/post.controller";
 
@@ -39,10 +39,27 @@ router.get("/", getAllPosts);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: "#/components/schemas/Post"
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               body:
+ *                 type: string
+ *               image:
+ *                 type: string
+ *               userId:
+ *                 type: integer
+ *             required:
+ *               - title
+ *               - body
+ *               - userId
  *     responses:
  *       201:
  *         description: Post creado
+ *       400:
+ *         description: Faltan campos obligatorios
+ *       500:
+ *         description: Error interno del servidor
  */
 router.post("/", createPost);
 
@@ -64,6 +81,12 @@ router.post("/", createPost);
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/Post"
+ *       400:
+ *         description: ID inválido
+ *       404:
+ *         description: Post no encontrado
+ *       500:
+ *         description: Error interno del servidor
  */
 router.get("/:id", getPostById);
 
@@ -92,6 +115,8 @@ router.get("/:id", getPostById);
  *         description: ID de post inválido
  *       404:
  *         description: Post no encontrado
+ *       500:
+ *         description: Error interno del servidor
  */
 router.get("/:post_id/comments", getCommentsByPostId);
 
@@ -113,8 +138,32 @@ router.get("/:post_id/comments", getCommentsByPostId);
  *         description: ID inválido
  *       404:
  *         description: Post no encontrado
+ *       500:
+ *         description: Error interno del servidor
  */
 router.delete("/:id", softDeletePost);
 
-router.patch("/:id/restore", restorePost); // Ruta para restaurar el post
+/**
+ * @swagger
+ * /api/posts/{id}/restore:
+ *   patch:
+ *     summary: Restaura un post eliminado lógicamente
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Post restaurado correctamente
+ *       400:
+ *         description: ID inválido
+ *       404:
+ *         description: Post no encontrado o no está eliminado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.patch("/:id/restore", restorePost);
+
 export default router;
