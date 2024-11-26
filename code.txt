@@ -92,27 +92,27 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const post_routes_js_1 = __importDefault(require("./routes/post.routes.js"));
-const comment_routes_js_1 = __importDefault(require("./routes/comment.routes.js"));
-const test_routes_js_1 = __importDefault(require("./routes/test.routes.js")); // Importar la ruta de prueba
+const post_routes_1 = __importDefault(require("./routes/post.routes"));
+const comment_routes_1 = __importDefault(require("./routes/comment.routes"));
+const test_routes_1 = __importDefault(require("./routes/test.routes")); // Importar la ruta de prueba
 const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
-const swagger_config_js_1 = __importDefault(require("./swagger.config.js"));
-const errorHandler_js_1 = require("./middleware/errorHandler.js");
+const swagger_config_1 = __importDefault(require("./swagger.config"));
+const errorHandler_1 = require("./middleware/errorHandler");
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 // Configuración de Swagger
 const swaggerSpec = (0, swagger_jsdoc_1.default)({
-    definition: swagger_config_js_1.default,
+    definition: swagger_config_1.default,
     apis: ["src/routes/*.ts"],
 });
 app.use("/api-docs", swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerSpec));
 // Rutas de la API
-app.use("/api/posts", post_routes_js_1.default);
-app.use("/api/comments", comment_routes_js_1.default);
-app.use("/api/test", test_routes_js_1.default); // Usar la ruta de prueba
+app.use("/api/posts", post_routes_1.default);
+app.use("/api/comments", comment_routes_1.default);
+app.use("/api/test", test_routes_1.default); // Usar la ruta de prueba
 // Middleware de manejo de errores
-app.use(errorHandler_js_1.errorHandler);
+app.use(errorHandler_1.errorHandler);
 exports.default = app;
 
 
@@ -122,94 +122,51 @@ exports.default = app;
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/controllers/comment.controller.js
 
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.moveComment = exports.createComment = void 0;
-const ormconfig_js_1 = require("../ormconfig.js");
-const Comment_js_1 = require("../entities/Comment.js");
-const commentRepository = ormconfig_js_1.dataSource.getRepository(Comment_js_1.Comment);
-const Post_js_1 = require("../entities/Post.js");
-const postRepository = ormconfig_js_1.dataSource.getRepository(Post_js_1.Post);
+const comment_service_1 = require("../services/comment.service");
+const commentService = new comment_service_1.CommentService();
 /**
- * Crea un nuevo comentario asociado a un post existente.
+ * Controlador para crear un comentario asociado a un post existente.
  */
-const createComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const createComment = async (req, res, next) => {
     try {
         const { body, name, email, postId } = req.body;
-        // Validación de campos obligatorios
-        if (!body || !name || !email || !postId) {
-            res.status(400).json({ message: "Faltan campos obligatorios" });
-            return;
-        }
-        // Crear el comentario
-        const comment = commentRepository.create({
+        const postIdNumber = Number(postId); // Conversion explícita a número
+        const savedComment = await commentService.createComment({
             body,
             name,
             email,
-            post: { id: postId },
+            postId: postIdNumber,
         });
-        // Guardar el comentario en la base de datos
-        const savedComment = yield commentRepository.save(comment);
         res.status(201).json(savedComment);
     }
     catch (error) {
-        console.error("Error al crear el comentario:", error);
-        res.status(500).json({ message: "Error al crear el comentario" });
+        next(error);
     }
-});
+};
 exports.createComment = createComment;
 /**
- * Mueve un comentario de un post a otro.
+ * Controlador para mover un comentario de un post a otro.
  */
-/**
- * Mueve un comentario de un post a otro.
- */
-const moveComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const moveComment = async (req, res, next) => {
     try {
         const { commentId, newPostId } = req.body;
-        if (!commentId ||
-            isNaN(Number(commentId)) ||
-            !newPostId ||
-            isNaN(Number(newPostId))) {
-            res.status(400).json({ message: "IDs inválidos" });
-            return;
-        }
-        const comment = yield commentRepository.findOneBy({
-            id: Number(commentId),
+        const commentIdNumber = Number(commentId); // Conversion explícita a número
+        const newPostIdNumber = Number(newPostId); // Conversion explícita a número
+        const movedComment = await commentService.moveComment({
+            commentId: commentIdNumber,
+            newPostId: newPostIdNumber,
         });
-        if (!comment) {
-            res.status(404).json({ message: "Comentario no encontrado" });
-            return;
-        }
-        const newPost = yield postRepository.findOneBy({
-            id: Number(newPostId),
-            // deletedAt: null,
+        res.status(200).json({
+            message: "Comentario movido exitosamente",
+            comment: movedComment,
         });
-        if (!newPost) {
-            res
-                .status(404)
-                .json({ message: "Nuevo post no encontrado o ha sido eliminado" });
-            return;
-        }
-        comment.post = newPost;
-        yield commentRepository.save(comment);
-        res
-            .status(200)
-            .json({ message: "Comentario movido exitosamente", comment });
     }
     catch (error) {
-        console.error("Error al mover el comentario:", error);
-        res.status(500).json({ message: "Error al mover el comentario" });
+        next(error);
     }
-});
+};
 exports.moveComment = moveComment;
 
 
@@ -219,140 +176,200 @@ exports.moveComment = moveComment;
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/controllers/post.controller.js
 
 "use strict";
-// src/controllers/post.controller.ts
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.softDeletePost = exports.getCommentsByPostId = exports.getPostById = exports.createPost = exports.getAllPosts = void 0;
-const ormconfig_js_1 = require("../ormconfig.js");
-const Post_js_1 = require("../entities/Post.js");
-const Comment_js_1 = require("../entities/Comment.js");
-const postRepository = ormconfig_js_1.dataSource.getRepository(Post_js_1.Post);
-const commentRepository = ormconfig_js_1.dataSource.getRepository(Comment_js_1.Comment);
+exports.restorePost = exports.softDeletePost = exports.getCommentsByPostId = exports.getPostById = exports.createPost = exports.getAllPosts = void 0;
+const post_service_1 = require("../services/post.service");
+const postService = new post_service_1.PostService();
 /**
  * Obtiene todos los posts con sus comentarios.
  */
-// src/controllers/post.controller.ts
-const getAllPosts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getAllPosts = async (req, res, next) => {
     try {
-        const posts = yield postRepository.find({ relations: ["comments"] });
+        const posts = await postService.getAllPosts();
         res.json(posts);
     }
     catch (error) {
-        console.error("Error al obtener los posts:", error);
-        res.status(500).json({ message: "Error al obtener los posts" });
+        next(error);
     }
-});
+};
 exports.getAllPosts = getAllPosts;
 /**
- * Crea un nuevo post con la posibilidad de incluir comentarios.
+ * Crea un nuevo post.
  */
-const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const createPost = async (req, res, next) => {
     try {
-        const { title, body, image, userId, comments } = req.body;
-        if (!title || !body || !userId) {
-            res.status(400).json({ message: "Faltan campos obligatorios" });
-            return;
-        }
-        const post = postRepository.create({
+        const { title, body, image, userId } = req.body;
+        const savedPost = await postService.createPost({
             title,
             body,
             image,
             userId,
-            comments,
         });
-        const savedPost = yield postRepository.save(post);
         res.status(201).json(savedPost);
     }
     catch (error) {
-        console.error("Error al crear el post:", error);
-        res.status(500).json({ message: "Error al crear el post" });
+        next(error);
     }
-});
+};
 exports.createPost = createPost;
 /**
  * Obtiene un post por su ID, incluyendo sus comentarios.
  */
-const getPostById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getPostById = async (req, res, next) => {
     try {
         const { id } = req.params;
-        if (!id || isNaN(Number(id))) {
-            res.status(400).json({ message: "ID inválido" });
-            return;
-        }
-        const post = yield postRepository.findOne({
-            where: { id: Number(id) },
-            relations: ["comments"],
-        });
-        if (!post) {
-            res.status(404).json({ message: "Post no encontrado" });
-            return;
-        }
+        const post = await postService.getPostById(Number(id));
         res.json(post);
     }
     catch (error) {
-        console.error("Error al obtener el post:", error);
-        res.status(500).json({ message: "Error al obtener el post" });
+        next(error);
     }
-});
+};
 exports.getPostById = getPostById;
 /**
  * Obtiene todos los comentarios de un post específico.
  */
-const getCommentsByPostId = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getCommentsByPostId = async (req, res, next) => {
     try {
         const { post_id } = req.params;
-        if (!post_id || isNaN(Number(post_id))) {
-            res.status(400).json({ message: "ID de post inválido" });
-            return;
-        }
-        const post = yield postRepository.findOne({
-            where: { id: Number(post_id) },
-            relations: ["comments"],
-        });
-        if (!post) {
-            res.status(404).json({ message: "Post no encontrado" });
-            return;
-        }
-        res.json(post.comments);
+        const comments = await postService.getCommentsByPostId(Number(post_id));
+        res.json(comments);
     }
     catch (error) {
-        console.error("Error al obtener los comentarios del post:", error);
-        res
-            .status(500)
-            .json({ message: "Error al obtener los comentarios del post" });
+        next(error);
     }
-});
+};
 exports.getCommentsByPostId = getCommentsByPostId;
-const softDeletePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+/**
+ * Elimina lógicamente un post por su ID.
+ */
+const softDeletePost = async (req, res, next) => {
     try {
         const { id } = req.params;
-        if (!id || isNaN(Number(id))) {
-            res.status(400).json({ message: "ID inválido" });
-            return;
-        }
-        const post = yield postRepository.findOneBy({ id: Number(id) });
-        if (!post) {
-            res.status(404).json({ message: "Post no encontrado" });
-            return;
-        }
-        post.deletedAt = new Date();
-        yield postRepository.save(post);
+        await postService.deletePost(Number(id));
         res.status(200).json({ message: "Post eliminado correctamente" });
     }
     catch (error) {
-        console.error("Error al eliminar el post:", error);
-        res.status(500).json({ message: "Error al eliminar el post" });
+        next(error);
     }
-});
+};
 exports.softDeletePost = softDeletePost;
+/**
+ * Restaura un post eliminado lógicamente.
+ */
+const restorePost = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        await postService.restorePost(Number(id));
+        res.status(200).json({ message: "Post restaurado correctamente" });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.restorePost = restorePost;
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/dtos/CreateCommentDTO.js
+
+"use strict";
+// src/dtos/CreateCommentDTO.ts
+var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+    var _, done = false;
+    for (var i = decorators.length - 1; i >= 0; i--) {
+        var context = {};
+        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+        if (kind === "accessor") {
+            if (result === void 0) continue;
+            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+            if (_ = accept(result.get)) descriptor.get = _;
+            if (_ = accept(result.set)) descriptor.set = _;
+            if (_ = accept(result.init)) initializers.unshift(_);
+        }
+        else if (_ = accept(result)) {
+            if (kind === "field") initializers.unshift(_);
+            else descriptor[key] = _;
+        }
+    }
+    if (target) Object.defineProperty(target, contextIn.name, descriptor);
+    done = true;
+};
+var __runInitializers = (this && this.__runInitializers) || function (thisArg, initializers, value) {
+    var useValue = arguments.length > 2;
+    for (var i = 0; i < initializers.length; i++) {
+        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+    }
+    return useValue ? value : void 0;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CreateCommentDTO = void 0;
+const class_validator_1 = require("class-validator");
+let CreateCommentDTO = (() => {
+    var _a;
+    let _body_decorators;
+    let _body_initializers = [];
+    let _body_extraInitializers = [];
+    let _name_decorators;
+    let _name_initializers = [];
+    let _name_extraInitializers = [];
+    let _email_decorators;
+    let _email_initializers = [];
+    let _email_extraInitializers = [];
+    let _postId_decorators;
+    let _postId_initializers = [];
+    let _postId_extraInitializers = [];
+    return _a = class CreateCommentDTO {
+            constructor() {
+                this.body = __runInitializers(this, _body_initializers, void 0);
+                this.name = (__runInitializers(this, _body_extraInitializers), __runInitializers(this, _name_initializers, void 0));
+                this.email = (__runInitializers(this, _name_extraInitializers), __runInitializers(this, _email_initializers, void 0));
+                this.postId = (__runInitializers(this, _email_extraInitializers), __runInitializers(this, _postId_initializers, void 0));
+                __runInitializers(this, _postId_extraInitializers);
+            }
+        },
+        (() => {
+            const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
+            _body_decorators = [(0, class_validator_1.IsString)(), (0, class_validator_1.IsNotEmpty)()];
+            _name_decorators = [(0, class_validator_1.IsString)(), (0, class_validator_1.IsNotEmpty)()];
+            _email_decorators = [(0, class_validator_1.IsEmail)()];
+            _postId_decorators = [(0, class_validator_1.IsInt)()];
+            __esDecorate(null, null, _body_decorators, { kind: "field", name: "body", static: false, private: false, access: { has: obj => "body" in obj, get: obj => obj.body, set: (obj, value) => { obj.body = value; } }, metadata: _metadata }, _body_initializers, _body_extraInitializers);
+            __esDecorate(null, null, _name_decorators, { kind: "field", name: "name", static: false, private: false, access: { has: obj => "name" in obj, get: obj => obj.name, set: (obj, value) => { obj.name = value; } }, metadata: _metadata }, _name_initializers, _name_extraInitializers);
+            __esDecorate(null, null, _email_decorators, { kind: "field", name: "email", static: false, private: false, access: { has: obj => "email" in obj, get: obj => obj.email, set: (obj, value) => { obj.email = value; } }, metadata: _metadata }, _email_initializers, _email_extraInitializers);
+            __esDecorate(null, null, _postId_decorators, { kind: "field", name: "postId", static: false, private: false, access: { has: obj => "postId" in obj, get: obj => obj.postId, set: (obj, value) => { obj.postId = value; } }, metadata: _metadata }, _postId_initializers, _postId_extraInitializers);
+            if (_metadata) Object.defineProperty(_a, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        })(),
+        _a;
+})();
+exports.CreateCommentDTO = CreateCommentDTO;
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/dtos/CreatePostDTO.js
+
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/dtos/comment.dtos.js
+
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 
 
 /********************/
@@ -362,50 +379,105 @@ exports.softDeletePost = softDeletePost;
 
 "use strict";
 // src/entities/Comment.ts
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
+var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+    var _, done = false;
+    for (var i = decorators.length - 1; i >= 0; i--) {
+        var context = {};
+        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+        if (kind === "accessor") {
+            if (result === void 0) continue;
+            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+            if (_ = accept(result.get)) descriptor.get = _;
+            if (_ = accept(result.set)) descriptor.set = _;
+            if (_ = accept(result.init)) initializers.unshift(_);
+        }
+        else if (_ = accept(result)) {
+            if (kind === "field") initializers.unshift(_);
+            else descriptor[key] = _;
+        }
+    }
+    if (target) Object.defineProperty(target, contextIn.name, descriptor);
+    done = true;
 };
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+var __runInitializers = (this && this.__runInitializers) || function (thisArg, initializers, value) {
+    var useValue = arguments.length > 2;
+    for (var i = 0; i < initializers.length; i++) {
+        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+    }
+    return useValue ? value : void 0;
+};
+var __setFunctionName = (this && this.__setFunctionName) || function (f, name, prefix) {
+    if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
+    return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Comment = void 0;
 const typeorm_1 = require("typeorm");
-const Post_js_1 = require("./Post.js");
-let Comment = class Comment {
-};
+const Post_1 = require("./Post");
+let Comment = (() => {
+    let _classDecorators = [(0, typeorm_1.Entity)()];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _id_decorators;
+    let _id_initializers = [];
+    let _id_extraInitializers = [];
+    let _body_decorators;
+    let _body_initializers = [];
+    let _body_extraInitializers = [];
+    let _name_decorators;
+    let _name_initializers = [];
+    let _name_extraInitializers = [];
+    let _email_decorators;
+    let _email_initializers = [];
+    let _email_extraInitializers = [];
+    let _postId_decorators;
+    let _postId_initializers = [];
+    let _postId_extraInitializers = [];
+    let _post_decorators;
+    let _post_initializers = [];
+    let _post_extraInitializers = [];
+    var Comment = _classThis = class {
+        constructor() {
+            this.id = __runInitializers(this, _id_initializers, void 0);
+            this.body = (__runInitializers(this, _id_extraInitializers), __runInitializers(this, _body_initializers, void 0));
+            this.name = (__runInitializers(this, _body_extraInitializers), __runInitializers(this, _name_initializers, void 0));
+            this.email = (__runInitializers(this, _name_extraInitializers), __runInitializers(this, _email_initializers, void 0));
+            this.postId = (__runInitializers(this, _email_extraInitializers), __runInitializers(this, _postId_initializers, void 0));
+            this.post = (__runInitializers(this, _postId_extraInitializers), __runInitializers(this, _post_initializers, void 0));
+            __runInitializers(this, _post_extraInitializers);
+        }
+    };
+    __setFunctionName(_classThis, "Comment");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
+        _id_decorators = [(0, typeorm_1.PrimaryGeneratedColumn)()];
+        _body_decorators = [(0, typeorm_1.Column)({ type: "text" })];
+        _name_decorators = [(0, typeorm_1.Column)({ type: "varchar", length: 255 })];
+        _email_decorators = [(0, typeorm_1.Column)({ type: "varchar", length: 255 })];
+        _postId_decorators = [(0, typeorm_1.Column)({ type: "int" })];
+        _post_decorators = [(0, typeorm_1.ManyToOne)(() => Post_1.Post, (post) => post.comments, { onDelete: "CASCADE" }), (0, typeorm_1.JoinColumn)({ name: "postId" })];
+        __esDecorate(null, null, _id_decorators, { kind: "field", name: "id", static: false, private: false, access: { has: obj => "id" in obj, get: obj => obj.id, set: (obj, value) => { obj.id = value; } }, metadata: _metadata }, _id_initializers, _id_extraInitializers);
+        __esDecorate(null, null, _body_decorators, { kind: "field", name: "body", static: false, private: false, access: { has: obj => "body" in obj, get: obj => obj.body, set: (obj, value) => { obj.body = value; } }, metadata: _metadata }, _body_initializers, _body_extraInitializers);
+        __esDecorate(null, null, _name_decorators, { kind: "field", name: "name", static: false, private: false, access: { has: obj => "name" in obj, get: obj => obj.name, set: (obj, value) => { obj.name = value; } }, metadata: _metadata }, _name_initializers, _name_extraInitializers);
+        __esDecorate(null, null, _email_decorators, { kind: "field", name: "email", static: false, private: false, access: { has: obj => "email" in obj, get: obj => obj.email, set: (obj, value) => { obj.email = value; } }, metadata: _metadata }, _email_initializers, _email_extraInitializers);
+        __esDecorate(null, null, _postId_decorators, { kind: "field", name: "postId", static: false, private: false, access: { has: obj => "postId" in obj, get: obj => obj.postId, set: (obj, value) => { obj.postId = value; } }, metadata: _metadata }, _postId_initializers, _postId_extraInitializers);
+        __esDecorate(null, null, _post_decorators, { kind: "field", name: "post", static: false, private: false, access: { has: obj => "post" in obj, get: obj => obj.post, set: (obj, value) => { obj.post = value; } }, metadata: _metadata }, _post_initializers, _post_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        Comment = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return Comment = _classThis;
+})();
 exports.Comment = Comment;
-__decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)(),
-    __metadata("design:type", Number)
-], Comment.prototype, "id", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: "text" }),
-    __metadata("design:type", String)
-], Comment.prototype, "body", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: "varchar", length: 255 }),
-    __metadata("design:type", String)
-], Comment.prototype, "name", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: "varchar", length: 255 }),
-    __metadata("design:type", String)
-], Comment.prototype, "email", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: "int" }),
-    __metadata("design:type", Number)
-], Comment.prototype, "postId", void 0);
-__decorate([
-    (0, typeorm_1.ManyToOne)(() => Post_js_1.Post, (post) => post.comments, { onDelete: "CASCADE" }),
-    (0, typeorm_1.JoinColumn)({ name: "postId" }),
-    __metadata("design:type", Post_js_1.Post)
-], Comment.prototype, "post", void 0);
-exports.Comment = Comment = __decorate([
-    (0, typeorm_1.Entity)()
-], Comment);
 
 
 /********************/
@@ -415,53 +487,137 @@ exports.Comment = Comment = __decorate([
 
 "use strict";
 // src/entities/Post.ts
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
+var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+    var _, done = false;
+    for (var i = decorators.length - 1; i >= 0; i--) {
+        var context = {};
+        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+        if (kind === "accessor") {
+            if (result === void 0) continue;
+            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+            if (_ = accept(result.get)) descriptor.get = _;
+            if (_ = accept(result.set)) descriptor.set = _;
+            if (_ = accept(result.init)) initializers.unshift(_);
+        }
+        else if (_ = accept(result)) {
+            if (kind === "field") initializers.unshift(_);
+            else descriptor[key] = _;
+        }
+    }
+    if (target) Object.defineProperty(target, contextIn.name, descriptor);
+    done = true;
 };
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+var __runInitializers = (this && this.__runInitializers) || function (thisArg, initializers, value) {
+    var useValue = arguments.length > 2;
+    for (var i = 0; i < initializers.length; i++) {
+        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+    }
+    return useValue ? value : void 0;
+};
+var __setFunctionName = (this && this.__setFunctionName) || function (f, name, prefix) {
+    if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
+    return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Post = void 0;
 const typeorm_1 = require("typeorm");
-const Comment_js_1 = require("./Comment.js");
-let Post = class Post {
-};
+const Comment_1 = require("./Comment");
+let Post = (() => {
+    let _classDecorators = [(0, typeorm_1.Entity)()];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _id_decorators;
+    let _id_initializers = [];
+    let _id_extraInitializers = [];
+    let _title_decorators;
+    let _title_initializers = [];
+    let _title_extraInitializers = [];
+    let _body_decorators;
+    let _body_initializers = [];
+    let _body_extraInitializers = [];
+    let _image_decorators;
+    let _image_initializers = [];
+    let _image_extraInitializers = [];
+    let _userId_decorators;
+    let _userId_initializers = [];
+    let _userId_extraInitializers = [];
+    let _comments_decorators;
+    let _comments_initializers = [];
+    let _comments_extraInitializers = [];
+    let _deletedAt_decorators;
+    let _deletedAt_initializers = [];
+    let _deletedAt_extraInitializers = [];
+    var Post = _classThis = class {
+        constructor() {
+            this.id = __runInitializers(this, _id_initializers, void 0);
+            this.title = (__runInitializers(this, _id_extraInitializers), __runInitializers(this, _title_initializers, void 0));
+            this.body = (__runInitializers(this, _title_extraInitializers), __runInitializers(this, _body_initializers, void 0));
+            this.image = (__runInitializers(this, _body_extraInitializers), __runInitializers(this, _image_initializers, void 0));
+            this.userId = (__runInitializers(this, _image_extraInitializers), __runInitializers(this, _userId_initializers, void 0));
+            this.comments = (__runInitializers(this, _userId_extraInitializers), __runInitializers(this, _comments_initializers, void 0));
+            this.deletedAt = (__runInitializers(this, _comments_extraInitializers), __runInitializers(this, _deletedAt_initializers, void 0)); // Maneja soft delete automáticamente
+            __runInitializers(this, _deletedAt_extraInitializers);
+        }
+    };
+    __setFunctionName(_classThis, "Post");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
+        _id_decorators = [(0, typeorm_1.PrimaryGeneratedColumn)()];
+        _title_decorators = [(0, typeorm_1.Column)({ type: "varchar" })];
+        _body_decorators = [(0, typeorm_1.Column)({ type: "text", nullable: true })];
+        _image_decorators = [(0, typeorm_1.Column)({ type: "varchar", nullable: true })];
+        _userId_decorators = [(0, typeorm_1.Column)({ type: "int" })];
+        _comments_decorators = [(0, typeorm_1.OneToMany)(() => Comment_1.Comment, (comment) => comment.post, { cascade: true })];
+        _deletedAt_decorators = [(0, typeorm_1.DeleteDateColumn)()];
+        __esDecorate(null, null, _id_decorators, { kind: "field", name: "id", static: false, private: false, access: { has: obj => "id" in obj, get: obj => obj.id, set: (obj, value) => { obj.id = value; } }, metadata: _metadata }, _id_initializers, _id_extraInitializers);
+        __esDecorate(null, null, _title_decorators, { kind: "field", name: "title", static: false, private: false, access: { has: obj => "title" in obj, get: obj => obj.title, set: (obj, value) => { obj.title = value; } }, metadata: _metadata }, _title_initializers, _title_extraInitializers);
+        __esDecorate(null, null, _body_decorators, { kind: "field", name: "body", static: false, private: false, access: { has: obj => "body" in obj, get: obj => obj.body, set: (obj, value) => { obj.body = value; } }, metadata: _metadata }, _body_initializers, _body_extraInitializers);
+        __esDecorate(null, null, _image_decorators, { kind: "field", name: "image", static: false, private: false, access: { has: obj => "image" in obj, get: obj => obj.image, set: (obj, value) => { obj.image = value; } }, metadata: _metadata }, _image_initializers, _image_extraInitializers);
+        __esDecorate(null, null, _userId_decorators, { kind: "field", name: "userId", static: false, private: false, access: { has: obj => "userId" in obj, get: obj => obj.userId, set: (obj, value) => { obj.userId = value; } }, metadata: _metadata }, _userId_initializers, _userId_extraInitializers);
+        __esDecorate(null, null, _comments_decorators, { kind: "field", name: "comments", static: false, private: false, access: { has: obj => "comments" in obj, get: obj => obj.comments, set: (obj, value) => { obj.comments = value; } }, metadata: _metadata }, _comments_initializers, _comments_extraInitializers);
+        __esDecorate(null, null, _deletedAt_decorators, { kind: "field", name: "deletedAt", static: false, private: false, access: { has: obj => "deletedAt" in obj, get: obj => obj.deletedAt, set: (obj, value) => { obj.deletedAt = value; } }, metadata: _metadata }, _deletedAt_initializers, _deletedAt_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        Post = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return Post = _classThis;
+})();
 exports.Post = Post;
-__decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)(),
-    __metadata("design:type", Number)
-], Post.prototype, "id", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: "varchar" }),
-    __metadata("design:type", String)
-], Post.prototype, "title", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: "text", nullable: true }),
-    __metadata("design:type", String)
-], Post.prototype, "body", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: "varchar", nullable: true }),
-    __metadata("design:type", String)
-], Post.prototype, "image", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: "int" }),
-    __metadata("design:type", Number)
-], Post.prototype, "userId", void 0);
-__decorate([
-    (0, typeorm_1.OneToMany)(() => Comment_js_1.Comment, (comment) => comment.post, { cascade: true }),
-    __metadata("design:type", Array)
-], Post.prototype, "comments", void 0);
-__decorate([
-    (0, typeorm_1.DeleteDateColumn)(),
-    __metadata("design:type", Object)
-], Post.prototype, "deletedAt", void 0);
-exports.Post = Post = __decorate([
-    (0, typeorm_1.Entity)()
-], Post);
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/entities/index.js
+
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// src/entities/index.ts
+__exportStar(require("./Post"), exports);
+__exportStar(require("./Comment"), exports);
 
 
 /********************/
@@ -479,10 +635,10 @@ const dotenv_1 = __importDefault(require("dotenv"));
 // Cargar variables de entorno desde .env
 dotenv_1.default.config();
 require("reflect-metadata");
-const ormconfig_js_1 = require("./ormconfig.js");
+const ormconfig_1 = require("./ormconfig");
 const app_1 = __importDefault(require("./app"));
 const PORT = 3000;
-ormconfig_js_1.dataSource
+ormconfig_1.dataSource
     .initialize()
     .then(() => {
     console.log("Data Source has been initialized!");
@@ -507,8 +663,8 @@ exports.errorHandler = void 0;
  * Captura cualquier error que ocurra en las rutas y envía una respuesta estandarizada.
  */
 const errorHandler = (err, req, res, next) => {
-    console.error(err.stack);
-    const statusCode = err.statusCode || 500;
+    console.error(err);
+    const statusCode = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
     res.status(statusCode).json({
         message,
@@ -583,11 +739,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.testDataSource = exports.dataSource = void 0;
 const typeorm_1 = require("typeorm");
-const Post_js_1 = require("./entities/Post.js");
-const Comment_js_1 = require("./entities/Comment.js");
+const Post_1 = require("./entities/Post");
+const Comment_1 = require("./entities/Comment");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-// Instancia para Desarrollo
+// Instancia para Desarrollo y Producción
 exports.dataSource = new typeorm_1.DataSource({
     type: "mysql",
     host: process.env.DB_HOST || "localhost",
@@ -597,7 +753,7 @@ exports.dataSource = new typeorm_1.DataSource({
     database: process.env.DB_NAME || "my_database",
     synchronize: false, // Debe ser false para usar migraciones
     logging: false,
-    entities: [Post_js_1.Post, Comment_js_1.Comment],
+    entities: [Post_1.Post, Comment_1.Comment],
     migrations: ["src/migrations/*.ts"],
     subscribers: [],
 });
@@ -606,7 +762,7 @@ exports.testDataSource = new typeorm_1.DataSource({
     type: "sqlite",
     database: ":memory:",
     dropSchema: true,
-    entities: [Post_js_1.Post, Comment_js_1.Comment],
+    entities: [Post_1.Post, Comment_1.Comment],
     synchronize: true, // Sincronizar el esquema para pruebas
     logging: false,
 });
@@ -618,11 +774,47 @@ exports.testDataSource = new typeorm_1.DataSource({
 /Users/matiaskochman/dev/personal/tests/post_comments/dist/routes/comment.routes.js
 
 "use strict";
+// src/routes/comment.routes.ts
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const comment_controller_js_1 = require("../controllers/comment.controller.js");
+const comment_controller_1 = require("../controllers/comment.controller");
 const router = (0, express_1.Router)();
-router.post("/", comment_controller_js_1.createComment);
+/**
+ * @swagger
+ * /api/comments:
+ *   post:
+ *     summary: Crea un nuevo comentario
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               body:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               postId:
+ *                 type: integer
+ *             required:
+ *               - body
+ *               - name
+ *               - email
+ *               - postId
+ *     responses:
+ *       201:
+ *         description: Comentario creado
+ *       400:
+ *         description: Faltan campos obligatorios
+ *       404:
+ *         description: Post no encontrado o eliminado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.post("/", comment_controller_1.createComment);
 /**
  * @swagger
  * /api/comments/move:
@@ -654,7 +846,7 @@ router.post("/", comment_controller_js_1.createComment);
  *       500:
  *         description: Error interno del servidor
  */
-router.put("/move", comment_controller_js_1.moveComment);
+router.put("/move", comment_controller_1.moveComment);
 exports.default = router;
 
 
@@ -667,7 +859,7 @@ exports.default = router;
 // src/routes/post.routes.ts
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const post_controller_js_1 = require("../controllers/post.controller.js");
+const post_controller_1 = require("../controllers/post.controller");
 const router = (0, express_1.Router)();
 /**
  * @swagger
@@ -684,7 +876,7 @@ const router = (0, express_1.Router)();
  *               items:
  *                 $ref: "#/components/schemas/Post"
  */
-router.get("/", post_controller_js_1.getAllPosts);
+router.get("/", post_controller_1.getAllPosts);
 /**
  * @swagger
  * /api/posts:
@@ -695,12 +887,29 @@ router.get("/", post_controller_js_1.getAllPosts);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: "#/components/schemas/Post"
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               body:
+ *                 type: string
+ *               image:
+ *                 type: string
+ *               userId:
+ *                 type: integer
+ *             required:
+ *               - title
+ *               - body
+ *               - userId
  *     responses:
  *       201:
  *         description: Post creado
+ *       400:
+ *         description: Faltan campos obligatorios
+ *       500:
+ *         description: Error interno del servidor
  */
-router.post("/", post_controller_js_1.createPost);
+router.post("/", post_controller_1.createPost);
 /**
  * @swagger
  * /api/posts/{id}:
@@ -719,8 +928,14 @@ router.post("/", post_controller_js_1.createPost);
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/Post"
+ *       400:
+ *         description: ID inválido
+ *       404:
+ *         description: Post no encontrado
+ *       500:
+ *         description: Error interno del servidor
  */
-router.get("/:id", post_controller_js_1.getPostById);
+router.get("/:id", post_controller_1.getPostById);
 /**
  * @swagger
  * /api/posts/{post_id}/comments:
@@ -746,8 +961,10 @@ router.get("/:id", post_controller_js_1.getPostById);
  *         description: ID de post inválido
  *       404:
  *         description: Post no encontrado
+ *       500:
+ *         description: Error interno del servidor
  */
-router.get("/:post_id/comments", post_controller_js_1.getCommentsByPostId);
+router.get("/:post_id/comments", post_controller_1.getCommentsByPostId);
 /**
  * @swagger
  * /api/posts/{id}:
@@ -766,8 +983,32 @@ router.get("/:post_id/comments", post_controller_js_1.getCommentsByPostId);
  *         description: ID inválido
  *       404:
  *         description: Post no encontrado
+ *       500:
+ *         description: Error interno del servidor
  */
-router.delete("/:id", post_controller_js_1.softDeletePost);
+router.delete("/:id", post_controller_1.softDeletePost);
+/**
+ * @swagger
+ * /api/posts/{id}/restore:
+ *   patch:
+ *     summary: Restaura un post eliminado lógicamente
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Post restaurado correctamente
+ *       400:
+ *         description: ID inválido
+ *       404:
+ *         description: Post no encontrado o no está eliminado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.patch("/:id/restore", post_controller_1.restorePost);
 exports.default = router;
 
 
@@ -788,6 +1029,181 @@ router.get("/error", (req, res) => {
     throw new Error("This is a test error.");
 });
 exports.default = router;
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/services/comment.service.js
+
+"use strict";
+// src/services/comment.service.ts
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CommentService = void 0;
+const Comment_1 = require("../entities/Comment");
+const ormconfig_1 = require("../ormconfig");
+const Post_1 = require("../entities/Post");
+class CommentService {
+    constructor() {
+        const isTest = process.env.NODE_ENV === "test";
+        this.commentRepository = isTest
+            ? ormconfig_1.testDataSource.getRepository(Comment_1.Comment)
+            : ormconfig_1.dataSource.getRepository(Comment_1.Comment);
+        this.postRepository = isTest
+            ? ormconfig_1.testDataSource.getRepository(Post_1.Post)
+            : ormconfig_1.dataSource.getRepository(Post_1.Post);
+    }
+    // Crear un nuevo comentario
+    async createComment(data) {
+        const { body, name, email, postId } = data;
+        if (!body || !name || !email || !postId) {
+            throw { status: 400, message: "Faltan campos obligatorios" };
+        }
+        // Verificar que el post existe y no está eliminado
+        const post = await this.postRepository.findOne({ where: { id: postId } });
+        if (!post || post.deletedAt) {
+            throw { status: 404, message: "Post no encontrado o eliminado" };
+        }
+        const comment = this.commentRepository.create({
+            body,
+            name,
+            email,
+            postId,
+        });
+        await this.commentRepository.save(comment);
+        return comment;
+    }
+    // Mover un comentario a otro post
+    async moveComment(data) {
+        const { commentId, newPostId } = data;
+        if (!commentId || !newPostId) {
+            throw { status: 400, message: "Faltan campos obligatorios" };
+        }
+        // Verificar que el comentario existe
+        const comment = await this.commentRepository.findOne({
+            where: { id: commentId },
+        });
+        if (!comment) {
+            throw { status: 404, message: "Comentario no encontrado" };
+        }
+        // Verificar que el nuevo post existe y no está eliminado
+        const newPost = await this.postRepository.findOne({
+            where: { id: newPostId },
+        });
+        if (!newPost || newPost.deletedAt) {
+            throw { status: 404, message: "Nuevo post no encontrado o eliminado" };
+        }
+        // Actualizar el postId del comentario
+        comment.postId = newPostId;
+        await this.commentRepository.save(comment);
+        return comment;
+    }
+}
+exports.CommentService = CommentService;
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/services/index.js
+
+"use strict";
+// src/services/index.ts
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.postService = exports.commentService = void 0;
+const comment_service_1 = require("./comment.service");
+const post_service_1 = require("./post.service");
+exports.commentService = new comment_service_1.CommentService();
+exports.postService = new post_service_1.PostService();
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/dist/services/post.service.js
+
+"use strict";
+// src/services/post.service.ts
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PostService = void 0;
+const Post_1 = require("../entities/Post");
+const ormconfig_1 = require("../ormconfig");
+class PostService {
+    constructor() {
+        const isTest = process.env.NODE_ENV === "test";
+        this.postRepository = isTest
+            ? ormconfig_1.testDataSource.getRepository(Post_1.Post)
+            : ormconfig_1.dataSource.getRepository(Post_1.Post);
+    }
+    // Crear un nuevo post
+    async createPost(data) {
+        const { title, body, image, userId } = data;
+        if (!title || !body || !userId) {
+            throw { status: 400, message: "Faltan campos obligatorios" };
+        }
+        const post = this.postRepository.create({ title, body, image, userId });
+        await this.postRepository.save(post);
+        return post;
+    }
+    // Obtener todos los posts
+    async getAllPosts() {
+        return this.postRepository.find({ relations: ["comments"] });
+    }
+    // Obtener un post por ID
+    async getPostById(id) {
+        if (isNaN(id)) {
+            throw { status: 400, message: "ID inválido" };
+        }
+        const post = await this.postRepository.findOne({
+            where: { id },
+            relations: ["comments"],
+        });
+        if (!post || post.deletedAt) {
+            throw { status: 404, message: "Post no encontrado" };
+        }
+        return post;
+    }
+    // Obtener comentarios por ID de post
+    async getCommentsByPostId(postId) {
+        if (isNaN(postId)) {
+            throw { status: 400, message: "ID de post inválido" };
+        }
+        const post = await this.postRepository.findOne({
+            where: { id: postId },
+            relations: ["comments"],
+        });
+        if (!post) {
+            throw { status: 404, message: "Post no encontrado" };
+        }
+        return post.comments;
+    }
+    // Soft delete de un post
+    async deletePost(id) {
+        if (isNaN(id)) {
+            throw { status: 400, message: "ID inválido" };
+        }
+        const post = await this.postRepository.findOne({ where: { id } });
+        if (!post || post.deletedAt) {
+            throw { status: 404, message: "Post no encontrado" };
+        }
+        await this.postRepository.softDelete(id);
+    }
+    // Restaurar un post soft deleted
+    async restorePost(id) {
+        if (isNaN(id)) {
+            throw { status: 400, message: "ID inválido" };
+        }
+        const post = await this.postRepository.findOne({
+            where: { id },
+            withDeleted: true,
+        });
+        if (!post || !post.deletedAt) {
+            throw { status: 404, message: "Post no encontrado o no está eliminado" };
+        }
+        await this.postRepository.restore(id);
+    }
+}
+exports.PostService = PostService;
 
 
 /********************/
@@ -906,108 +1322,64 @@ export default app;
 /Users/matiaskochman/dev/personal/tests/post_comments/src/controllers/comment.controller.ts
 
 // src/controllers/comment.controller.ts
-
-import { Request, Response } from "express";
-import { dataSource, testDataSource } from "../ormconfig";
+import { Request, Response, NextFunction } from "express";
+import { CommentService } from "../services/comment.service";
+import { CommentCreateDTO, CommentMoveDTO } from "../dtos/comment.dtos";
 import { Comment } from "../entities/Comment";
 
-const isTest = process.env.NODE_ENV === "test";
-const commentRepository = isTest
-  ? testDataSource.getRepository(Comment)
-  : dataSource.getRepository(Comment);
-
-import { Post } from "../entities/Post";
-
-const postRepository = isTest
-  ? testDataSource.getRepository(Post)
-  : dataSource.getRepository(Post);
+const commentService: CommentService = new CommentService();
 
 /**
- * Crea un nuevo comentario asociado a un post existente.
+ * Controlador para crear un comentario asociado a un post existente.
  */
 export const createComment = async (
-  req: Request,
-  res: Response
+  req: Request<unknown, unknown, CommentCreateDTO>,
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   try {
-    const { body, name, email, postId } = req.body;
+    const { body, name, email, postId }: CommentCreateDTO = req.body;
 
-    // Validación de campos obligatorios
-    if (!body || !name || !email || !postId) {
-      res.status(400).json({ message: "Faltan campos obligatorios" });
-      return;
-    }
+    const postIdNumber: number = Number(postId); // Conversion explícita a número
 
-    // Crear el comentario
-    const comment = commentRepository.create({
+    const savedComment: Comment = await commentService.createComment({
       body,
       name,
       email,
-      post: { id: postId },
+      postId: postIdNumber,
     });
-
-    // Guardar el comentario en la base de datos
-    const savedComment = await commentRepository.save(comment);
 
     res.status(201).json(savedComment);
-  } catch (error) {
-    console.error("Error al crear el comentario:", error);
-    res.status(500).json({ message: "Error al crear el comentario" });
+  } catch (error: unknown) {
+    next(error);
   }
 };
+
 /**
- * Mueve un comentario de un post a otro.
- */
-/**
- * Mueve un comentario de un post a otro.
+ * Controlador para mover un comentario de un post a otro.
  */
 export const moveComment = async (
-  req: Request,
-  res: Response
+  req: Request<unknown, unknown, CommentMoveDTO>,
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   try {
-    const { commentId, newPostId } = req.body;
+    const { commentId, newPostId }: CommentMoveDTO = req.body;
 
-    if (
-      !commentId ||
-      isNaN(Number(commentId)) ||
-      !newPostId ||
-      isNaN(Number(newPostId))
-    ) {
-      res.status(400).json({ message: "IDs inválidos" });
-      return;
-    }
+    const commentIdNumber: number = Number(commentId); // Conversion explícita a número
+    const newPostIdNumber: number = Number(newPostId); // Conversion explícita a número
 
-    const comment = await commentRepository.findOneBy({
-      id: Number(commentId),
+    const movedComment: Comment = await commentService.moveComment({
+      commentId: commentIdNumber,
+      newPostId: newPostIdNumber,
     });
 
-    if (!comment) {
-      res.status(404).json({ message: "Comentario no encontrado" });
-      return;
-    }
-
-    const newPost = await postRepository.findOneBy({
-      id: Number(newPostId),
-      // deletedAt: null,
+    res.status(200).json({
+      message: "Comentario movido exitosamente",
+      comment: movedComment,
     });
-
-    if (!newPost) {
-      res
-        .status(404)
-        .json({ message: "Nuevo post no encontrado o ha sido eliminado" });
-      return;
-    }
-
-    comment.post = newPost;
-    await commentRepository.save(comment);
-
-    res
-      .status(200)
-      .json({ message: "Comentario movido exitosamente", comment });
-  } catch (error) {
-    console.error("Error al mover el comentario:", error);
-    res.status(500).json({ message: "Error al mover el comentario" });
+  } catch (error: unknown) {
+    next(error);
   }
 };
 
@@ -1018,64 +1390,46 @@ export const moveComment = async (
 /Users/matiaskochman/dev/personal/tests/post_comments/src/controllers/post.controller.ts
 
 // src/controllers/post.controller.ts
+import { Request, Response, NextFunction } from "express";
+import { PostService } from "../services/post.service";
 
-import { Request, Response } from "express";
-import { dataSource, testDataSource } from "../ormconfig";
-import { Post } from "../entities/Post";
-import { Comment } from "../entities/Comment";
-
-const isTest = process.env.NODE_ENV === "test";
-const postRepository = isTest
-  ? testDataSource.getRepository(Post)
-  : dataSource.getRepository(Post);
-
-const commentRepository = dataSource.getRepository(Comment);
+const postService = new PostService();
 
 /**
  * Obtiene todos los posts con sus comentarios.
  */
-// src/controllers/post.controller.ts
-
 export const getAllPosts = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   try {
-    const posts = await postRepository.find({ relations: ["comments"] });
+    const posts = await postService.getAllPosts();
     res.json(posts);
   } catch (error) {
-    console.error("Error al obtener los posts:", error);
-    res.status(500).json({ message: "Error al obtener los posts" });
+    next(error);
   }
 };
 
 /**
- * Crea un nuevo post con la posibilidad de incluir comentarios.
+ * Crea un nuevo post.
  */
 export const createPost = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   try {
-    const { title, body, image, userId, comments } = req.body;
-
-    if (!title || !body || !userId) {
-      res.status(400).json({ message: "Faltan campos obligatorios" });
-      return;
-    }
-
-    const post = postRepository.create({
+    const { title, body, image, userId } = req.body;
+    const savedPost = await postService.createPost({
       title,
       body,
       image,
       userId,
-      comments,
     });
-    const savedPost = await postRepository.save(post);
     res.status(201).json(savedPost);
   } catch (error) {
-    console.error("Error al crear el post:", error);
-    res.status(500).json({ message: "Error al crear el post" });
+    next(error);
   }
 };
 
@@ -1084,30 +1438,15 @@ export const createPost = async (
  */
 export const getPostById = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const { id } = req.params;
-
-    if (!id || isNaN(Number(id))) {
-      res.status(400).json({ message: "ID inválido" });
-      return;
-    }
-
-    const post = await postRepository.findOne({
-      where: { id: Number(id) },
-      relations: ["comments"],
-    });
-
-    if (!post) {
-      res.status(404).json({ message: "Post no encontrado" });
-      return;
-    }
-
+    const post = await postService.getPostById(Number(id));
     res.json(post);
   } catch (error) {
-    console.error("Error al obtener el post:", error);
-    res.status(500).json({ message: "Error al obtener el post" });
+    next(error);
   }
 };
 
@@ -1116,93 +1455,110 @@ export const getPostById = async (
  */
 export const getCommentsByPostId = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const { post_id } = req.params;
-
-    if (!post_id || isNaN(Number(post_id))) {
-      res.status(400).json({ message: "ID de post inválido" });
-      return;
-    }
-
-    const post = await postRepository.findOne({
-      where: { id: Number(post_id) },
-      relations: ["comments"],
-    });
-
-    if (!post) {
-      res.status(404).json({ message: "Post no encontrado" });
-      return;
-    }
-
-    res.json(post.comments);
+    const comments = await postService.getCommentsByPostId(Number(post_id));
+    res.json(comments);
   } catch (error) {
-    console.error("Error al obtener los comentarios del post:", error);
-    res
-      .status(500)
-      .json({ message: "Error al obtener los comentarios del post" });
-  }
-};
-
-export const softDeletePost = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { id } = req.params;
-
-    if (!id || isNaN(Number(id))) {
-      res.status(400).json({ message: "ID inválido" });
-      return;
-    }
-
-    const post = await postRepository.findOneBy({ id: Number(id) });
-
-    if (!post) {
-      res.status(404).json({ message: "Post no encontrado" });
-      return;
-    }
-
-    post.deletedAt = new Date();
-    await postRepository.save(post);
-
-    res.status(200).json({ message: "Post eliminado correctamente" });
-  } catch (error) {
-    console.error("Error al eliminar el post:", error);
-    res.status(500).json({ message: "Error al eliminar el post" });
+    next(error);
   }
 };
 
 /**
- * Restaurar un post eliminado lógicamente.
+ * Elimina lógicamente un post por su ID.
  */
-export const restorePost = async (req: Request, res: Response) => {
+export const softDeletePost = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { id } = req.params;
-    const postId = Number(id);
-
-    // Buscar el post incluyendo los eliminados
-    const post = await postRepository.findOne({
-      where: { id: postId },
-      withDeleted: true,
-    });
-
-    if (!post || !post.deletedAt) {
-      return res
-        .status(404)
-        .json({ message: "Post no encontrado o no está eliminado" });
-    }
-
-    // Restaurar el post
-    await postRepository.restore(postId);
-
-    return res.status(200).json({ message: "Post restaurado correctamente" });
+    await postService.deletePost(Number(id));
+    res.status(200).json({ message: "Post eliminado correctamente" });
   } catch (error) {
-    console.error("Error al restaurar el post:", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    next(error);
   }
 };
+
+/**
+ * Restaura un post eliminado lógicamente.
+ */
+export const restorePost = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    await postService.restorePost(Number(id));
+    res.status(200).json({ message: "Post restaurado correctamente" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/src/dtos/CreateCommentDTO.ts
+
+// src/dtos/CreateCommentDTO.ts
+
+import { IsInt, IsNotEmpty, IsString, IsEmail } from "class-validator";
+
+export class CreateCommentDTO {
+  @IsString()
+  @IsNotEmpty()
+  body!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @IsEmail()
+  email!: string;
+
+  @IsInt()
+  postId!: number;
+}
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/src/dtos/CreatePostDTO.ts
+
+// src/dtos/post.dtos.ts
+export interface CreatePostDTO {
+  title: string;
+  body: string;
+  image: string;
+  userId: number;
+}
+
+
+/********************/
+
+
+/Users/matiaskochman/dev/personal/tests/post_comments/src/dtos/comment.dtos.ts
+
+// src/dtos/comment.dtos.ts
+export interface CommentCreateDTO {
+  body: string;
+  name: string;
+  email: string;
+  postId: string;
+}
+
+export interface CommentMoveDTO {
+  commentId: string;
+  newPostId: string;
+}
 
 
 /********************/
@@ -1288,6 +1644,16 @@ export class Post {
 /********************/
 
 
+/Users/matiaskochman/dev/personal/tests/post_comments/src/entities/index.ts
+
+// src/entities/index.ts
+export * from "./Post";
+export * from "./Comment";
+
+
+/********************/
+
+
 /Users/matiaskochman/dev/personal/tests/post_comments/src/index.ts
 
 // src/index.ts
@@ -1334,9 +1700,9 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  console.error(err.stack);
+  console.error(err);
 
-  const statusCode = err.statusCode || 500;
+  const statusCode = err.status || err.statusCode || 500;
   const message = err.message || "Internal Server Error";
 
   res.status(statusCode).json({
@@ -1447,11 +1813,48 @@ export const testDataSource = new DataSource({
 
 /Users/matiaskochman/dev/personal/tests/post_comments/src/routes/comment.routes.ts
 
+// src/routes/comment.routes.ts
+
 import { Router } from "express";
 import { createComment, moveComment } from "../controllers/comment.controller";
 
 const router = Router();
 
+/**
+ * @swagger
+ * /api/comments:
+ *   post:
+ *     summary: Crea un nuevo comentario
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               body:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               postId:
+ *                 type: integer
+ *             required:
+ *               - body
+ *               - name
+ *               - email
+ *               - postId
+ *     responses:
+ *       201:
+ *         description: Comentario creado
+ *       400:
+ *         description: Faltan campos obligatorios
+ *       404:
+ *         description: Post no encontrado o eliminado
+ *       500:
+ *         description: Error interno del servidor
+ */
 router.post("/", createComment);
 
 /**
@@ -1503,7 +1906,7 @@ import {
   createPost,
   getPostById,
   getCommentsByPostId,
-  softDeletePost, // Importar el nuevo método
+  softDeletePost,
   restorePost,
 } from "../controllers/post.controller";
 
@@ -1536,10 +1939,27 @@ router.get("/", getAllPosts);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: "#/components/schemas/Post"
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               body:
+ *                 type: string
+ *               image:
+ *                 type: string
+ *               userId:
+ *                 type: integer
+ *             required:
+ *               - title
+ *               - body
+ *               - userId
  *     responses:
  *       201:
  *         description: Post creado
+ *       400:
+ *         description: Faltan campos obligatorios
+ *       500:
+ *         description: Error interno del servidor
  */
 router.post("/", createPost);
 
@@ -1561,6 +1981,12 @@ router.post("/", createPost);
  *           application/json:
  *             schema:
  *               $ref: "#/components/schemas/Post"
+ *       400:
+ *         description: ID inválido
+ *       404:
+ *         description: Post no encontrado
+ *       500:
+ *         description: Error interno del servidor
  */
 router.get("/:id", getPostById);
 
@@ -1589,6 +2015,8 @@ router.get("/:id", getPostById);
  *         description: ID de post inválido
  *       404:
  *         description: Post no encontrado
+ *       500:
+ *         description: Error interno del servidor
  */
 router.get("/:post_id/comments", getCommentsByPostId);
 
@@ -1610,10 +2038,34 @@ router.get("/:post_id/comments", getCommentsByPostId);
  *         description: ID inválido
  *       404:
  *         description: Post no encontrado
+ *       500:
+ *         description: Error interno del servidor
  */
 router.delete("/:id", softDeletePost);
 
-router.patch("/:id/restore", restorePost); // Ruta para restaurar el post
+/**
+ * @swagger
+ * /api/posts/{id}/restore:
+ *   patch:
+ *     summary: Restaura un post eliminado lógicamente
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Post restaurado correctamente
+ *       400:
+ *         description: ID inválido
+ *       404:
+ *         description: Post no encontrado o no está eliminado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.patch("/:id/restore", restorePost);
+
 export default router;
 
 
@@ -1700,17 +2152,6 @@ export class CommentService {
     return comment;
   }
 
-  // Obtener comentarios por ID de post
-  async getCommentsByPostId(postId: number): Promise<Comment[]> {
-    // Verificar que el post existe y no está eliminado
-    const post = await this.postRepository.findOne({ where: { id: postId } });
-    if (!post || post.deletedAt) {
-      throw { status: 404, message: "Post no encontrado o eliminado" };
-    }
-
-    return this.commentRepository.find({ where: { postId } });
-  }
-
   // Mover un comentario a otro post
   async moveComment(data: MoveCommentDTO): Promise<Comment> {
     const { commentId, newPostId } = data;
@@ -1747,6 +2188,20 @@ export class CommentService {
 /********************/
 
 
+/Users/matiaskochman/dev/personal/tests/post_comments/src/services/index.ts
+
+// src/services/index.ts
+
+import { CommentService } from "./comment.service";
+import { PostService } from "./post.service";
+
+export const commentService = new CommentService();
+export const postService = new PostService();
+
+
+/********************/
+
+
 /Users/matiaskochman/dev/personal/tests/post_comments/src/services/post.service.ts
 
 // src/services/post.service.ts
@@ -1754,16 +2209,13 @@ export class CommentService {
 import { Repository } from "typeorm";
 import { Post } from "../entities/Post";
 import { dataSource, testDataSource } from "../ormconfig";
+import { Comment } from "../entities/Comment";
 
 interface CreatePostDTO {
   title: string;
   body: string;
+  image?: string;
   userId: number;
-}
-
-interface MoveCommentDTO {
-  commentId: number;
-  newPostId: number;
 }
 
 export class PostService {
@@ -1778,13 +2230,13 @@ export class PostService {
 
   // Crear un nuevo post
   async createPost(data: CreatePostDTO): Promise<Post> {
-    const { title, body, userId } = data;
+    const { title, body, image, userId } = data;
 
     if (!title || !body || !userId) {
       throw { status: 400, message: "Faltan campos obligatorios" };
     }
 
-    const post = this.postRepository.create({ title, body, userId });
+    const post = this.postRepository.create({ title, body, image, userId });
     await this.postRepository.save(post);
     return post;
   }
@@ -1796,6 +2248,10 @@ export class PostService {
 
   // Obtener un post por ID
   async getPostById(id: number): Promise<Post> {
+    if (isNaN(id)) {
+      throw { status: 400, message: "ID inválido" };
+    }
+
     const post = await this.postRepository.findOne({
       where: { id },
       relations: ["comments"],
@@ -1808,8 +2264,30 @@ export class PostService {
     return post;
   }
 
+  // Obtener comentarios por ID de post
+  async getCommentsByPostId(postId: number): Promise<Comment[]> {
+    if (isNaN(postId)) {
+      throw { status: 400, message: "ID de post inválido" };
+    }
+
+    const post = await this.postRepository.findOne({
+      where: { id: postId },
+      relations: ["comments"],
+    });
+
+    if (!post) {
+      throw { status: 404, message: "Post no encontrado" };
+    }
+
+    return post.comments;
+  }
+
   // Soft delete de un post
   async deletePost(id: number): Promise<void> {
+    if (isNaN(id)) {
+      throw { status: 400, message: "ID inválido" };
+    }
+
     const post = await this.postRepository.findOne({ where: { id } });
 
     if (!post || post.deletedAt) {
@@ -1821,6 +2299,10 @@ export class PostService {
 
   // Restaurar un post soft deleted
   async restorePost(id: number): Promise<void> {
+    if (isNaN(id)) {
+      throw { status: 400, message: "ID inválido" };
+    }
+
     const post = await this.postRepository.findOne({
       where: { id },
       withDeleted: true,

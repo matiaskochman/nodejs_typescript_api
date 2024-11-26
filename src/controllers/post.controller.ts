@@ -1,8 +1,11 @@
 // src/controllers/post.controller.ts
 import { Request, Response, NextFunction } from "express";
 import { PostService } from "../services/post.service";
+import { Post } from "../entities/Post";
+import { Comment } from "../entities/Comment";
+import { CreatePostDTO } from "../dtos/CreatePostDTO";
 
-const postService = new PostService();
+const postService: PostService = new PostService();
 
 /**
  * Obtiene todos los posts con sus comentarios.
@@ -13,9 +16,9 @@ export const getAllPosts = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const posts = await postService.getAllPosts();
+    const posts: Post[] = await postService.getAllPosts();
     res.json(posts);
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 };
@@ -24,20 +27,22 @@ export const getAllPosts = async (
  * Crea un nuevo post.
  */
 export const createPost = async (
-  req: Request,
+  req: Request<unknown, unknown, CreatePostDTO>,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { title, body, image, userId } = req.body;
-    const savedPost = await postService.createPost({
+    const { title, body, image, userId }: CreatePostDTO = req.body;
+
+    const savedPost: Post = await postService.createPost({
       title,
       body,
       image,
       userId,
     });
+
     res.status(201).json(savedPost);
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 };
@@ -46,15 +51,17 @@ export const createPost = async (
  * Obtiene un post por su ID, incluyendo sus comentarios.
  */
 export const getPostById = async (
-  req: Request,
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { id } = req.params;
-    const post = await postService.getPostById(Number(id));
+    const { id }: { id: string } = req.params;
+
+    const post: Post | null = await postService.getPostById(Number(id));
+
     res.json(post);
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 };
@@ -63,15 +70,19 @@ export const getPostById = async (
  * Obtiene todos los comentarios de un post específico.
  */
 export const getCommentsByPostId = async (
-  req: Request,
+  req: Request<{ post_id: string }>,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { post_id } = req.params;
-    const comments = await postService.getCommentsByPostId(Number(post_id));
+    const { post_id }: { post_id: string } = req.params;
+
+    const comments: Comment[] = await postService.getCommentsByPostId(
+      Number(post_id)
+    );
+
     res.json(comments);
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 };
@@ -80,15 +91,17 @@ export const getCommentsByPostId = async (
  * Elimina lógicamente un post por su ID.
  */
 export const softDeletePost = async (
-  req: Request,
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { id }: { id: string } = req.params;
+
     await postService.deletePost(Number(id));
+
     res.status(200).json({ message: "Post eliminado correctamente" });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 };
@@ -97,15 +110,17 @@ export const softDeletePost = async (
  * Restaura un post eliminado lógicamente.
  */
 export const restorePost = async (
-  req: Request,
+  req: Request<{ id: string }>,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { id }: { id: string } = req.params;
+
     await postService.restorePost(Number(id));
+
     res.status(200).json({ message: "Post restaurado correctamente" });
-  } catch (error) {
+  } catch (error: unknown) {
     next(error);
   }
 };
