@@ -3,104 +3,104 @@
 const { promises: fs } = require("fs");
 const path = require("path");
 
-// Rutas de los directorios 'dist' y 'src'
-const distDir = path.resolve(__dirname, "../dist");
-const srcDir = path.resolve(__dirname, "../src");
-
-// Archivos de salida y destacados
-const outputFile = path.resolve(__dirname, "../code.txt");
-const swaggerConfigPath = path.resolve(srcDir, "swagger.config.ts");
-const envFilePath = path.resolve(__dirname, "../.env");
+// Configuración de rutas importantes
+const paths = {
+  distDir: path.resolve(__dirname, "../dist"),
+  srcDir: path.resolve(__dirname, "../src"),
+  outputFile: path.resolve(__dirname, "../code.txt"),
+  swaggerConfig: path.resolve(__dirname, "../src/swagger.config.ts"),
+  envFile: path.resolve(__dirname, "../.env"),
+  launchConfig: path.resolve(__dirname, "../.vscode/launch.json"), // Ruta del archivo launch.json
+};
 
 // Separador para distinguir archivos
-const separator = "/********************/";
+const SEPARATOR = "/********************/";
 
-async function processFilesInDirectory(directory, excludeFiles = []) {
-  const contents = [];
+async function readDirectory(directory, excludeFiles = []) {
   try {
-    // Leer los contenidos del directorio
     const entries = await fs.readdir(directory, { withFileTypes: true });
+    const results = [];
 
     for (const entry of entries) {
       const fullPath = path.join(directory, entry.name);
-
       if (excludeFiles.includes(fullPath)) continue;
 
       if (entry.isDirectory()) {
-        // Si es una carpeta, procesar recursivamente
-        const subContents = await processFilesInDirectory(
-          fullPath,
-          excludeFiles
-        );
-        contents.push(...subContents);
+        results.push(...(await readDirectory(fullPath, excludeFiles)));
       } else if (entry.isFile()) {
-        // Si es un archivo, leer su contenido
-        const fileContent = await fs.readFile(fullPath, "utf-8");
-        contents.push({ path: fullPath, content: fileContent });
+        const content = await fs.readFile(fullPath, "utf-8");
+        results.push({ path: fullPath, content });
       }
     }
+    return results;
   } catch (error) {
-    console.error(`Error al procesar el directorio ${directory}:`, error);
+    console.error(`Error leyendo el directorio ${directory}:`, error);
+    return [];
   }
-  return contents;
 }
 
-async function processFileIfExists(filePath) {
+async function readFileIfExists(filePath) {
   try {
-    const fileContent = await fs.readFile(filePath, "utf-8");
-    return { path: filePath, content: fileContent };
+    const content = await fs.readFile(filePath, "utf-8");
+    return { path: filePath, content };
   } catch {
-    return null; // Retorna null si el archivo no existe
+    return null;
+  }
+}
+
+async function writeToFile(filePath, content) {
+  try {
+    await fs.appendFile(filePath, content);
+  } catch (error) {
+    console.error(`Error escribiendo en el archivo ${filePath}:`, error);
+  }
+}
+
+async function processHighlightedFiles(filePaths, outputFile) {
+  const files = await Promise.all(filePaths.map(readFileIfExists));
+  for (const file of files.filter(Boolean)) {
+    await writeToFile(outputFile, `\n${file.path}\n\n`);
+    await writeToFile(outputFile, `${file.content}\n\n`);
+    await writeToFile(outputFile, `${SEPARATOR}\n\n`);
   }
 }
 
 async function main() {
   try {
-    // Crear un nuevo archivo de salida o limpiar el existente
-    await fs.writeFile(outputFile, "");
+    console.log("Iniciando procesamiento de archivos...");
 
-    const highlightedFiles = [];
+    // Inicializar archivo de salida
+    await fs.writeFile(paths.outputFile, "");
 
-    // Procesar archivo .env si existe
-    console.log("Procesando archivo .env...");
-    const envFile = await processFileIfExists(envFilePath);
-    if (envFile) highlightedFiles.push(envFile);
+    // Procesar archivos destacados
+    console.log("Procesando archivos destacados...");
+    await processHighlightedFiles(
+      [paths.envFile, paths.swaggerConfig, paths.launchConfig], // Incluye launch.json
+      paths.outputFile
+    );
 
-    // Procesar archivo swagger.config.ts si existe
-    console.log("Procesando archivo swagger.config.ts...");
-    const swaggerFile = await processFileIfExists(swaggerConfigPath);
-    if (swaggerFile) highlightedFiles.push(swaggerFile);
-
-    // Escribir archivos destacados al inicio
-    for (const { path: filePath, content } of highlightedFiles) {
-      await fs.appendFile(outputFile, `\n${filePath}\n\n`);
-      await fs.appendFile(outputFile, `${content}\n\n`);
-      await fs.appendFile(outputFile, `${separator}\n\n`);
-    }
-
-    // Procesar los archivos dentro de 'dist' y 'src', excluyendo los destacados
-    console.log("Procesando archivos de 'dist'...");
-    const distContents = await processFilesInDirectory(distDir, [
-      swaggerConfigPath,
-      envFilePath,
+    // Procesar directorios
+    console.log("Procesando directorios...");
+    const distContents = await readDirectory(paths.distDir, [
+      paths.swaggerConfig,
+      paths.envFile,
     ]);
-    console.log("Procesando archivos de 'src'...");
-    const srcContents = await processFilesInDirectory(srcDir, [
-      swaggerConfigPath,
-      envFilePath,
+    const srcContents = await readDirectory(paths.srcDir, [
+      paths.swaggerConfig,
+      paths.envFile,
     ]);
 
-    // Combinar contenidos de 'dist' y 'src' y escribirlos al archivo de salida
+    // Escribir contenidos de directorios en el archivo de salida
     const allContents = [...distContents, ...srcContents];
     for (const { path: filePath, content } of allContents) {
-      await fs.appendFile(outputFile, `\n${filePath}\n\n`);
-      await fs.appendFile(outputFile, `${content}\n\n`);
-      await fs.appendFile(outputFile, `${separator}\n\n`);
+      await writeToFile(paths.outputFile, `\n${filePath}\n\n`);
+      await writeToFile(paths.outputFile, `${content}\n\n`);
+      await writeToFile(paths.outputFile, `${SEPARATOR}\n\n`);
     }
 
-    console.log(`Archivos procesados y guardados en '${outputFile}'`);
+    console.log(`Proceso completado. Archivo generado: ${paths.outputFile}`);
   } catch (error) {
-    console.error("Error al procesar los archivos:", error);
+    console.error("Error durante la ejecución principal:", error);
   }
 }
 

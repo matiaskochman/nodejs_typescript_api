@@ -4,19 +4,30 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug Entire API",
-      "skipFiles": ["<node_internals>/**"],
+      "name": "Debug TS App",
       "program": "${workspaceFolder}/src/index.ts",
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "runtimeArgs": ["--loader", "ts-node/esm"], // Para ES Modules
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Tests",
+      "program": "${workspaceFolder}/node_modules/jest/bin/jest.js",
+      "args": ["--runInBand"],
       "env": {
-        "NODE_ENV": "development",
+        "NODE_ENV": "test",
         "DB_HOST": "localhost",
         "DB_PORT": "5555",
         "DB_USER": "my_user",
         "DB_PASSWORD": "my_password",
-        "DB_NAME": "my_database"
+        "DB_NAME": "test_database"
       },
-      "preLaunchTask": "tsc: build - tsconfig.json" // Compila antes de ejecutar
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
     }
   ]
 }

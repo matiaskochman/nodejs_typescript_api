@@ -1,14 +1,24 @@
 {
   "compilerOptions": {
-    "module": "commonjs", // Usa CommonJS para módulos
-    "target": "es6",
-    "outDir": "dist",
-    "rootDir": "src",
-    "strict": true,
-    "esModuleInterop": true, // Habilita interoperabilidad entre CommonJS y ES Modules
-    "experimentalDecorators": true, // Necesario para TypeORM
-    "emitDecoratorMetadata": true // Necesario para TypeORM
+    "target": "ES2020",
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true, // Esto genera la metadata para los decoradores
+    "sourceMap": true,
+    "outDir": "./dist",
+    "strict": true
   },
+  // "compilerOptions": {
+  //   "module": "commonjs", // Usa CommonJS para módulos
+  //   "target": "es6",
+  //   "outDir": "dist",
+  //   "rootDir": "src",
+  //   "strict": true,
+  //   "esModuleInterop": true, // Habilita interoperabilidad entre CommonJS y ES Modules
+  //   "experimentalDecorators": true, // Necesario para TypeORM
+  //   "emitDecoratorMetadata": true // Necesario para TypeORM
+  // },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "tests"]
 }

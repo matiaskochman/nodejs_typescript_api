@@ -1,4 +1,5 @@
 // src/ormconfig.ts
+import "reflect-metadata";
 
 import { DataSource } from "typeorm";
 import { Post } from "./entities/Post";
@@ -10,7 +11,7 @@ import { CommentRepository } from "./repositories/CommentRepository";
 dotenv.config();
 
 // Instancia para Desarrollo y Producción
-export const dataSource = new DataSource({
+const dataSource = new DataSource({
   type: "mysql",
   host: process.env.DB_HOST || "localhost",
   port: parseInt(process.env.DB_PORT || "3306"),
@@ -27,7 +28,7 @@ export const dataSource = new DataSource({
 });
 
 // Instancia para Pruebas
-export const testDataSource = new DataSource({
+const testDataSource = new DataSource({
   type: "sqlite",
   database: ":memory:",
   dropSchema: true,
@@ -36,3 +37,5 @@ export const testDataSource = new DataSource({
   logging: false,
   // Añade tus repositorios personalizados para pruebas
 });
+
+export { dataSource, testDataSource };
