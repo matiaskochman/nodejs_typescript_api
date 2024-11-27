@@ -4,6 +4,8 @@ import { DataSource } from "typeorm";
 import { Post } from "./entities/Post";
 import { Comment } from "./entities/Comment";
 import dotenv from "dotenv";
+import { PostRepository } from "./repositories/PostRepository";
+import { CommentRepository } from "./repositories/CommentRepository";
 
 dotenv.config();
 
@@ -20,6 +22,8 @@ export const dataSource = new DataSource({
   entities: [Post, Comment],
   migrations: ["src/migrations/*.ts"],
   subscribers: [],
+  // Añade tus repositorios personalizados
+  // Nota: TypeORM 0.3.x no soporta la opción 'repositories' directamente
 });
 
 // Instancia para Pruebas
@@ -30,4 +34,5 @@ export const testDataSource = new DataSource({
   entities: [Post, Comment],
   synchronize: true, // Sincronizar el esquema para pruebas
   logging: false,
+  // Añade tus repositorios personalizados para pruebas
 });

@@ -1,23 +1,21 @@
 // src/services/comment.service.ts
 
-import { Repository } from "typeorm";
 import { Comment } from "../entities/Comment";
+import { CommentRepository } from "../repositories/CommentRepository";
+import { PostRepository } from "../repositories/PostRepository";
 import { dataSource, testDataSource } from "../ormconfig";
-import { Post } from "../entities/Post";
 import { CommentCreateDTO, CommentMoveDTO } from "../dtos/comment.dtos";
 
 export class CommentService {
-  private readonly commentRepository: Repository<Comment>;
-  private readonly postRepository: Repository<Post>;
+  private commentRepository: CommentRepository;
+  private postRepository: PostRepository;
 
   constructor() {
     const isTest: boolean = process.env.NODE_ENV === "test";
-    this.commentRepository = isTest
-      ? testDataSource.getRepository(Comment)
-      : dataSource.getRepository(Comment);
-    this.postRepository = isTest
-      ? testDataSource.getRepository(Post)
-      : dataSource.getRepository(Post);
+    const manager = isTest ? testDataSource.manager : dataSource.manager;
+
+    this.commentRepository = new CommentRepository(manager);
+    this.postRepository = new PostRepository(manager);
   }
 
   /**
@@ -36,7 +34,7 @@ export class CommentService {
     }
 
     // Verificar que el post existe y no está eliminado
-    const post: Post | null = await this.postRepository.findOne({
+    const post = await this.postRepository.findOne({
       where: { id: postIdNumber },
     });
 
@@ -78,7 +76,7 @@ export class CommentService {
     }
 
     // Verificar que el nuevo post existe y no está eliminado
-    const newPost: Post | null = await this.postRepository.findOne({
+    const newPost = await this.postRepository.findOne({
       where: { id: newPostIdNumber },
     });
 

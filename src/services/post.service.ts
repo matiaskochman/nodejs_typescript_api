@@ -1,25 +1,22 @@
 // src/services/post.service.ts
 
-import { Repository } from "typeorm";
 import { Post } from "../entities/Post";
+import { PostRepository } from "../repositories/PostRepository";
+import { CommentRepository } from "../repositories/CommentRepository";
 import { dataSource, testDataSource } from "../ormconfig";
+import { CreatePostDTO } from "../dtos/CreatePostDTO";
 import { Comment } from "../entities/Comment";
 
-export interface CreatePostDTO {
-  title: string;
-  body: string;
-  image?: string;
-  userId: number;
-}
-
 export class PostService {
-  private postRepository: Repository<Post>;
+  private postRepository: PostRepository;
+  private commentRepository: CommentRepository;
 
   constructor() {
     const isTest: boolean = process.env.NODE_ENV === "test";
-    this.postRepository = isTest
-      ? testDataSource.getRepository(Post)
-      : dataSource.getRepository(Post);
+    const manager = isTest ? testDataSource.manager : dataSource.manager;
+
+    this.postRepository = new PostRepository(manager);
+    this.commentRepository = new CommentRepository(manager);
   }
 
   /**
@@ -45,14 +42,11 @@ export class PostService {
   }
 
   /**
-   * Obtener todos los posts
-   * @returns Lista de posts con comentarios
+   * Obtener todos los posts activos con sus comentarios.
+   * @returns Lista de posts activos.
    */
   async getAllPosts(): Promise<Post[]> {
-    const posts: Post[] = await this.postRepository.find({
-      relations: ["comments"],
-    });
-    return posts;
+    return this.postRepository.findActivePosts();
   }
 
   /**
@@ -87,16 +81,7 @@ export class PostService {
       throw { status: 400, message: "ID de post inválido" };
     }
 
-    const post: Post | null = await this.postRepository.findOne({
-      where: { id: postId },
-      relations: ["comments"],
-    });
-
-    if (!post) {
-      throw { status: 404, message: "Post no encontrado" };
-    }
-
-    return post.comments;
+    return this.commentRepository.findCommentsByPostId(postId);
   }
 
   /**
